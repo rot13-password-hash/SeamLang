@@ -1,4 +1,4 @@
-#include "expression.h"
+#include "expression.hpp"
 
 void seam::ir::ast::call_expression::visit(visitor* vst)
 {

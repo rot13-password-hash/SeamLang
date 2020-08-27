@@ -1,5 +1,5 @@
-#include "lexer.h"
-#include "../utils/exception.h"
+#include "lexer.hpp"
+#include "../utils/exception.hpp"
 
 #include <cctype>
 #include <unordered_map>

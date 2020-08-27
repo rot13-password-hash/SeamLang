@@ -3,7 +3,7 @@
 #include <stdexcept>
 #include <string>
 
-#include "position.h"
+#include "position.hpp"
 
 namespace seam::utils
 {

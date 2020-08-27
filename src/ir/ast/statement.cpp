@@ -1,4 +1,4 @@
-#include "visitor.h"
+#include "visitor.hpp"
 
 namespace seam::ir::ast
 {

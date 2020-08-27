@@ -5,7 +5,7 @@
 #include <llvm/Support/Error.h>
 #include <llvm/Support/WithColor.h>
 
-#include "position.h"
+#include "position.hpp"
 
 namespace seam::utils
 {

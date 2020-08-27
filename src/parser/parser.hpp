@@ -2,9 +2,8 @@
 
 #include <llvm/Support/Error.h>
 
-#include "../ir/ast/ast.h"
-#include "../ir/ast/expression.h"
-#include "../lexer/lexer.h"
+#include "../ir/ast/expression.hpp"
+#include "../lexer/lexer.hpp"
 
 namespace seam::parser
 {

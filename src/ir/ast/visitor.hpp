@@ -1,7 +1,7 @@
 #pragma once
 
-#include "node.h"
-#include "statement.h"
+#include "node.hpp"
+#include "statement.hpp"
 
 
 #define BASE_VISITOR(c) virtual bool visit(c* a) { return true; }

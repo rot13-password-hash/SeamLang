@@ -6,8 +6,8 @@
 #include <utility>
 #include <vector>
 
-#include "node.h"
-#include "type.h"
+#include "node.hpp"
+#include "type.hpp"
 
 namespace seam::ir::ast
 {

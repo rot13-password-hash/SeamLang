@@ -1,7 +1,7 @@
 #include <llvm/Support/WithColor.h>
 
-#include "parser/parser.h"
-#include "utils/exception.h"
+#include "parser/parser.hpp"
+#include "utils/exception.hpp"
 
 int main()
 {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "node.h"
-#include "visitor.h"
+#include "node.hpp"
+#include "visitor.hpp"
 
 namespace seam::ir::ast
 {	

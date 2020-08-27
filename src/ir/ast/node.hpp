@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../utils/position.h"
+#include "../../utils/position.hpp"
 
 namespace seam::ir::ast
 {

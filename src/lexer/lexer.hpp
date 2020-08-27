@@ -1,7 +1,7 @@
 #pragma once
 
-#include "lexeme.h"
-#include "../utils/position.h"
+#include "lexeme.hpp"
+#include "../utils/position.hpp"
 
 namespace seam::lexer
 {

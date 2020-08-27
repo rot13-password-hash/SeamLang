@@ -1,7 +1,7 @@
 #include <sstream>
 
-#include "parser.h"
-#include "../utils/error.h"
+#include "parser.hpp"
+#include "../utils/error.hpp"
 
 namespace seam::parser
 {
