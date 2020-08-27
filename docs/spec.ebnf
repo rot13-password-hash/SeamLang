@@ -1,0 +1,3 @@
+(* Seam Language Specification *)
+
+expression = "true" | "false" | string | number | identifer | "(" expression ")"

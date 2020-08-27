@@ -286,7 +286,9 @@ namespace seam::lexer
 
 	void lexer::next_lexeme()
 	{
-		skip_whitespace(); 
+		skip_whitespace();
+
+		current_.position = current_position();
 
 		switch (peek_character())
 		{

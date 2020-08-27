@@ -1,6 +1,5 @@
 #define CATCH_CONFIG_MAIN
 #include "../3rdparty/catch2.h"
-
 #include "../lexer/lexer.h"
 
 TEST_CASE("Example lexed source", "[lexer]") {

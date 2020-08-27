@@ -14,11 +14,11 @@ namespace seam::utils
 	};
 
 	/**
-	 * TODO: Comment this properly.
+	 * Struct for specifying a position range.
 	 */
 	struct position_range
 	{
-		position start;
-		position end;
+		position start; // start position
+		position end; // end position
 	};
 }

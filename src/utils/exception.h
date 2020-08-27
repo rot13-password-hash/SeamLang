@@ -7,6 +7,9 @@
 
 namespace seam::utils
 {
+	/**
+	 * Seam exception class
+	 */
 	struct exception : std::runtime_error
 	{
 		utils::position position;
@@ -16,9 +19,21 @@ namespace seam::utils
 		{}
 	};
 
+	/**
+	 * Seam lexical exception class
+	 */
 	struct lexical_exception final : exception
 	{
 		explicit lexical_exception(const utils::position position, const std::string& msg) :
+			exception(position, msg) {}
+	};
+
+	/**
+	 * Seam parser exception class
+	 */
+	struct parser_exception final : exception
+	{
+		explicit parser_exception(const utils::position position, const std::string& msg) :
 			exception(position, msg) {}
 	};
 }

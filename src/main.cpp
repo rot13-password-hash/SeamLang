@@ -1,19 +1,36 @@
-#include "lexer/lexer.h"
+#include <llvm/Support/WithColor.h>
+
+#include "parser/parser.h"
+#include "utils/exception.h"
 
 int main()
 {
-	seam::lexer::lexer lexer(R"(
+	seam::parser::parser parser("test", R"(
+		fn test()
+		{
+
+		}
+
 		fn main() @constructor
 		{
-		  test()
+			test() 
 		}
 	)");
 
-	lexer.next_lexeme();
-	auto next_lexeme = lexer.current_lexeme();
-	while (next_lexeme.type != seam::lexer::lexeme_type::eof)
+	llvm::ExitOnError exitOnErr{};
+	try
 	{
-		lexer.next_lexeme();
-		next_lexeme = lexer.current_lexeme();
+		auto root = parser.parse();
+		exitOnErr(root.takeError());
+	}
+	catch (const seam::utils::exception& ex)
+	{
+		llvm::errs() << ex.position.line << ':' << ex.position.column << ": ";
+		llvm::WithColor::error() << ex.what() << '\n';
+	}
+	catch (const std::exception& ex)
+	{
+		llvm::WithColor::error();
+		llvm::errs() << ex.what() << '\n';
 	}
 }

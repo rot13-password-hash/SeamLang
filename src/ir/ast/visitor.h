@@ -11,6 +11,8 @@ namespace seam::ir::ast
 {
 	struct visitor
 	{
+		virtual ~visitor() = default;
+		
 		BASE_VISITOR(node)
 
 		VISITOR(node, statement)

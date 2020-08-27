@@ -18,7 +18,7 @@ add_executable(compiler
 	src/main.cpp
 	src/lexer/lexer.cpp 
 	src/parser/parser.cpp
-	src/ir/ast/statement.cpp "src/utils/error.cpp")
+	src/ir/ast/statement.cpp "src/utils/error.cpp" "src/ir/ast/expression.cpp")
 
 add_definitions(-D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)
 
