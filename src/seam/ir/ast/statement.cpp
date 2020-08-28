@@ -57,4 +57,15 @@ namespace seam::ir::ast
 			statement->visit(vst);
 		}
 	}
+	
+	void return_statement::visit(base_visitor* vst)
+	{
+		vst->base_visit(this);
+	}
+
+	void return_statement::visit_children(base_visitor* vst)
+	{
+		value->visit(vst);
+	}
+
 }

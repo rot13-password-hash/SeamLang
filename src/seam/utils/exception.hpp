@@ -7,9 +7,6 @@
 
 namespace seam::utils
 {
-	/**
-	 * Seam exception class
-	 */
 	struct exception : std::runtime_error
 	{
 		utils::position position;

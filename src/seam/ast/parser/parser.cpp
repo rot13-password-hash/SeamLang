@@ -180,7 +180,7 @@ namespace seam::parser
 				auto identifier_name = std::string{ current_lexeme.value };
 				lexer_.next_lexeme();
 
-				auto unresolved_var = std::make_unique<ir::ast::unresolved_variable>(utils::position_range{ start_position, lexer_.current_lexeme().position }, std::move(identifier_name));
+				auto unresolved_var = std::make_unique<ir::ast::unresolved_symbol>(utils::position_range{ start_position, lexer_.current_lexeme().position }, std::move(identifier_name));
 				return std::make_unique<ir::ast::variable>(utils::position_range{ start_position, lexer_.current_lexeme().position }, std::move(unresolved_var));
 			}
 			default:
@@ -258,6 +258,26 @@ namespace seam::parser
 		}
 	}
 
+	llvm::Expected<std::unique_ptr<ir::ast::return_statement>> parser::parse_return_statement()
+	{
+		const auto start = lexer_.current_lexeme().position;
+		lexer_.next_lexeme();
+
+		std::unique_ptr<ir::ast::expression> expression = nullptr;
+		if (lexer_.current_lexeme().type != lexer::lexeme_type::symbol_close_brace
+			&& lexer_.current_lexeme().position.line == start.line)
+		{
+			auto parsed_expression = parse_expression();
+			if(!parsed_expression)
+			{
+				return parsed_expression.takeError();
+			}
+			expression = std::move(*parsed_expression);
+		}
+
+		return std::make_unique<>();
+	}
+
 	llvm::Expected<std::unique_ptr<ir::ast::block>> parser::parse_block_statement()
 	{
 		if (auto error = expect(lexer::lexeme_type::symbol_open_brace, true))
@@ -284,7 +304,12 @@ namespace seam::parser
 			{
 				case lexer::lexeme_type::kw_return:
 				{
-					// TODO: Parse return stat.
+					auto return_statement = parse_return_statement();
+					if (!return_statement)
+					{
+						return return_statement.takeError();
+					}
+					body.emplace_back(std::move(*return_statement));
 					break;
 				}
 				default:

@@ -17,35 +17,35 @@ namespace seam::ir::ast
 
 	template <typename T>
 	struct literal final : expression
-	{
+	{		
+		T value;
+
 		explicit literal(const utils::position_range range, T value)
 			: expression(range), value(std::move(value)) {}
 		
-		T value;
-
 		void visit(base_visitor* vst) override
 		{
 			vst->base_visit(this);
 		}
 	};
 
-	struct unresolved_variable final : expression
-	{
-		explicit unresolved_variable(const utils::position_range range, std::string variable_name)
-			: expression(range), name(std::move(variable_name)) {}
-		
+	struct unresolved_symbol final : expression
+	{		
 		std::string name;
+
+		explicit unresolved_symbol(const utils::position_range range, std::string variable_name)
+			: expression(range), name(std::move(variable_name)) {}
 
 		void visit(base_visitor* vst) override;
 	};
 
 	struct variable final : expression
-	{
+	{		
+		std::unique_ptr<expression> value;
+
 		explicit variable(const utils::position_range range, std::unique_ptr<expression> expr)
 			: expression(range), value(std::move(expr)) {}
 		
-		std::unique_ptr<expression> value;
-
 		void visit(base_visitor* vst) override;
 	protected:
 		void visit_children(base_visitor* vst);
@@ -53,11 +53,11 @@ namespace seam::ir::ast
 
 	struct call_expression final : expression
 	{
-		explicit call_expression(const utils::position_range range, std::unique_ptr<expression> function, expression_list arguments)
-			: expression(range), function(std::move(function)), arguments(std::move(arguments)) {}
-
 		std::unique_ptr<expression> function;
 		expression_list arguments;
+
+		explicit call_expression(const utils::position_range range, std::unique_ptr<expression> function, expression_list arguments)
+			: expression(range), function(std::move(function)), arguments(std::move(arguments)) {}
 
 		void visit(base_visitor* vst) override;
 	protected:

@@ -1,6 +1,7 @@
 #define CATCH_CONFIG_MAIN
-#include "../3rdparty/catch2.hpp"
-#include "../lexer/lexer.hpp"
+#include "../seam/lexer/lexeme.hpp"
+#include "../seam/lexer/lexer.hpp"
+#include "3rdparty/catch2.hpp"
 
 TEST_CASE("Example lexed source", "[lexer]") {
 	std::vector<seam::lexer::lexeme> expected_lexemes = {

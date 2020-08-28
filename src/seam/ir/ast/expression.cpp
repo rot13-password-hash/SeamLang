@@ -24,7 +24,7 @@ void seam::ir::ast::variable::visit_children(base_visitor* vst)
 	value->visit(vst);
 }
 
-void seam::ir::ast::unresolved_variable::visit(base_visitor* vst)
+void seam::ir::ast::unresolved_symbol::visit(base_visitor* vst)
 {
 	vst->base_visit(this);
 }

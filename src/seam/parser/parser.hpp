@@ -12,6 +12,12 @@ namespace seam::parser
 		std::string_view filename_; // name of file currently being parsed.
 		lexer::lexer lexer_; // current lexer instance.
 
+
+		/**
+		 * 
+		 */
+		void skip_statement();
+		
 		/**
 		 * Checks whether current lexeme type matches expected.
 		 *
@@ -78,6 +84,8 @@ namespace seam::parser
 		 * @returns a unique pointer to an expression node when successful, otherwise llvm::Error.
 		 */
 		llvm::Expected<std::unique_ptr<ir::ast::expression>> parse_expression();
+
+		llvm::Expected<std::unique_ptr<ir::ast::return_statement>> parse_return_statement();
 		
 		/**
 		 * Parses a block statement.

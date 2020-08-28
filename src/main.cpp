@@ -1,7 +1,7 @@
 #include <llvm/Support/WithColor.h>
 
-#include "parser/parser.hpp"
-#include "utils/exception.hpp"
+#include "seam/parser/parser.hpp"
+#include "seam/utils/exception.hpp"
 
 int main()
 {
@@ -13,7 +13,7 @@ int main()
 
 		fn main() @constructor
 		{
-			test() 
+			test()
 		}
 	)");
 
