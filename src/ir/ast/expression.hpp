@@ -1,7 +1,7 @@
 #pragma once
 
 #include "node.hpp"
-#include "visitor.hpp"
+#include "base_visitor.hpp"
 
 namespace seam::ir::ast
 {	
@@ -23,9 +23,9 @@ namespace seam::ir::ast
 		
 		T value;
 
-		void visit(visitor* vst) override
+		void visit(base_visitor* vst) override
 		{
-			vst->visit(this);
+			vst->base_visit(this);
 		}
 	};
 
@@ -36,7 +36,7 @@ namespace seam::ir::ast
 		
 		std::string name;
 
-		void visit(visitor* vst) override;
+		void visit(base_visitor* vst) override;
 	};
 
 	struct variable final : expression
@@ -46,9 +46,9 @@ namespace seam::ir::ast
 		
 		std::unique_ptr<expression> value;
 
-		void visit(visitor* vst) override;
+		void visit(base_visitor* vst) override;
 	protected:
-		void visit_children(visitor* vst);
+		void visit_children(base_visitor* vst);
 	};
 
 	struct call_expression final : expression
@@ -59,8 +59,8 @@ namespace seam::ir::ast
 		std::unique_ptr<expression> function;
 		expression_list arguments;
 
-		void visit(visitor* vst) override;
+		void visit(base_visitor* vst) override;
 	protected:
-		void visit_children(visitor* vst);
+		void visit_children(base_visitor* vst);
 	};
 }

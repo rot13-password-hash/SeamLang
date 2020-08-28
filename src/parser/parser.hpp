@@ -94,7 +94,21 @@ namespace seam::parser
 		 *
 		 * @returns a unique pointer to a function definition ast node when successful, otherwise llvm::Error.
 		 */
-		llvm::Expected<std::unique_ptr<ir::ast::function_declaration>> parse_function_definition_statement();
+		llvm::Expected<std::unique_ptr<ir::ast::function_signature>> parse_function_signature();
+
+		/**
+		 * Parses a function definition statement.
+		 *
+		 * @returns a unique pointer to a function definition ast node when successful, otherwise llvm::Error.
+		 */
+		llvm::Expected<std::unique_ptr<ir::ast::function_definition>> parse_function_definition_statement();
+
+		/**
+		 * Parses an extern function definition statement.
+		 *
+		 * @returns a unique pointer to an extern function definition ast node when successful, otherwise llvm::Error.
+		 */
+		llvm::Expected<std::unique_ptr<ir::ast::extern_function_definition>> parse_extern_function_definition_statement();
 		
 		/**
 		 * Parses a type definition statement.
@@ -110,7 +124,7 @@ namespace seam::parser
 		 *
 		 * - function
 		 * - type
-		 * - export???
+		 * - extern
 		 *
 		 * @returns a unique pointer to a restricted statement ast node when successful, otherwise llvm::Error.
 		 */
@@ -124,7 +138,7 @@ namespace seam::parser
 		 *
 		 * - functions
 		 * - types
-		 * - exports?
+		 * - extern
 		 *
 		 * @param is_type_scope whether we're parsing in a type scope.
 		 * @returns a unique pointer to a restricted block ast node when successful, otherwise llvm::Error.

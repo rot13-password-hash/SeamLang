@@ -1,14 +1,11 @@
 #include "expression.hpp"
 
-void seam::ir::ast::call_expression::visit(visitor* vst)
+void seam::ir::ast::call_expression::visit(base_visitor* vst)
 {
-	if (vst->visit(this))
-	{
-		visit_children(vst);
-	}
+	vst->base_visit(this);
 }
 
-void seam::ir::ast::call_expression::visit_children(visitor* vst)
+void seam::ir::ast::call_expression::visit_children(base_visitor* vst)
 {
 	function->visit(vst);
 	for (const auto& argument : arguments)
@@ -17,20 +14,17 @@ void seam::ir::ast::call_expression::visit_children(visitor* vst)
 	}
 }
 
-void seam::ir::ast::variable::visit(visitor* vst)
+void seam::ir::ast::variable::visit(base_visitor* vst)
 {
-	if (vst->visit(this))
-	{
-		visit_children(vst);
-	}
+	vst->base_visit(this);
 }
 
-void seam::ir::ast::variable::visit_children(visitor* vst)
+void seam::ir::ast::variable::visit_children(base_visitor* vst)
 {
 	value->visit(vst);
 }
 
-void seam::ir::ast::unresolved_variable::visit(visitor* vst)
+void seam::ir::ast::unresolved_variable::visit(base_visitor* vst)
 {
-	vst->visit(this);
+	vst->base_visit(this);
 }

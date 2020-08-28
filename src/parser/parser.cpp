@@ -241,11 +241,11 @@ namespace seam::parser
 						}
 						default:
 						{
-							break; // TODO: Finish this.
+							std::stringstream error_message;
+							error_message << "expected function call or index, got " << current_lexeme.to_string();
+							return llvm::make_error<utils::error_info>(filename_, lexer_.current_lexeme().position, error_message.str());
 						}
 					}
-
-					break;
 				}
 				return expression;
 			}
@@ -307,7 +307,7 @@ namespace seam::parser
 		return std::make_unique<ir::ast::block>(utils::position_range { start_position, lexer_.current_lexeme().position }, std::move(body));
 	}
 
-	llvm::Expected<std::unique_ptr<ir::ast::function_declaration>> parser::parse_function_definition_statement()
+	llvm::Expected<std::unique_ptr<ir::ast::function_signature>> parser::parse_function_signature()
 	{
 		const auto start_position = lexer_.current_lexeme().position;
 
@@ -369,6 +369,18 @@ namespace seam::parser
 			attribute_list.insert(std::string { lexer_.current_lexeme().value });
 			lexer_.next_lexeme();
 		}
+		// std::string{ function_name }, std::move(return_type),
+		//	std::move(*param_list), std::move(attribute_list)
+	}
+
+	llvm::Expected<std::unique_ptr<ir::ast::function_definition>> parser::parse_function_definition_statement()
+	{
+		const auto start_position = lexer_.current_lexeme().position;
+		auto signature = parse_function_signature();
+		if (!signature)
+		{
+			return signature.takeError();
+		}
 
 		// Parse function body
 		auto block = parse_block_statement();
@@ -377,8 +389,13 @@ namespace seam::parser
 			return block.takeError();
 		}
 
-		return std::make_unique<ir::ast::function_definition>(utils::position_range { start_position, lexer_.current_lexeme().position }, std::string{ function_name }, std::move(return_type),
-			std::move(*param_list), std::move(attribute_list), std::move(*block));
+		return std::make_unique<ir::ast::function_definition>(utils::position_range{ start_position, lexer_.current_lexeme().position },
+			std::move(*signature), std::move(*block));
+	}
+
+	llvm::Expected<std::unique_ptr<ir::ast::extern_function_definition>> parser::parse_extern_function_definition_statement()
+	{
+		return nullptr;
 	}
 
 	llvm::Expected<std::unique_ptr<ir::ast::type_definition>> parser::parse_type_definition_statement()
@@ -492,8 +509,7 @@ namespace seam::parser
 			}
 			case lexer::lexeme_type::kw_extern: // Extern Definition
 			{
-				// TODO: Parse Extern Definitions, and actually consider whether this should be here?
-				break;
+				return parse_extern_function_definition_statement();
 			}
 			default:
 			{
@@ -502,8 +518,6 @@ namespace seam::parser
 				return llvm::make_error<utils::error_info>(filename_, lexer_.current_lexeme().position, error_message.str());
 			}
 		}
-		
-		return nullptr;
 	}
 
 	llvm::Expected<std::unique_ptr<ir::ast::restricted_block>> parser::parse_restricted_block_statement(const bool is_type_scope)
@@ -555,14 +569,13 @@ namespace seam::parser
 			return root.takeError();
 		}
 		
-		// Check whether last lexeme is EOF
 		if (auto error = expect(lexer::lexeme_type::eof))
 		{
 			return std::move(error);
 		}
 
 		// TODO: Invoke parser passes here!
-
+		
 		return root;
 	}
 }
