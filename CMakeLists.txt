@@ -13,7 +13,7 @@ include_directories(${LLVM_INCLUDE_DIRS})
 add_definitions(${LLVM_DEFINITIONS})
 
 # Get rid of warnings
-add_definitions(-D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS /w)
+add_definitions(-D_SILENCE_ALL_CXX17_DEPRECATION_WARNINGS)
 
 # Create compiler executable
 add_executable(compiler

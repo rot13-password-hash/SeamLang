@@ -2,6 +2,7 @@
 
 #include "../utils/position.hpp"
 
+#include <string>
 #include <string_view>
 
 namespace seam::lexer
