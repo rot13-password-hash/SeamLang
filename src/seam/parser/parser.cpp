@@ -160,17 +160,17 @@ namespace seam::parser
 		case lexer::lexeme_type::kw_false:
 		{
 			lexer_.next_lexeme(); // Consume lexeme.
-			return std::make_unique<ir::ast::expression::literal<bool>>(utils::position_range{ start_position, current_lexeme.position }, lexeme_type != lexer::lexeme_type::kw_false);
+			return std::make_unique<ir::ast::expression::bool_literal>(utils::position_range{ start_position, current_lexeme.position }, lexeme_type != lexer::lexeme_type::kw_false);
 		}
 		case lexer::lexeme_type::literal_number:
 		{
 			lexer_.next_lexeme();
-			return std::make_unique<ir::ast::expression::literal<std::string>>(utils::position_range{ start_position, current_lexeme.position }, std::string{ current_lexeme.value });
+			return std::make_unique<ir::ast::expression::string_literal>(utils::position_range{ start_position, current_lexeme.position }, std::string{ current_lexeme.value });
 		}
 		case lexer::lexeme_type::literal_string:
 		{
 			lexer_.next_lexeme();
-			return std::make_unique<ir::ast::expression::literal<std::string>>(utils::position_range{ start_position, current_lexeme.position }, std::string{ current_lexeme.value });
+			return std::make_unique<ir::ast::expression::string_literal>(utils::position_range{ start_position, current_lexeme.position }, std::string{ current_lexeme.value });
 		}
 		case lexer::lexeme_type::symbol_open_parenthesis: // (expr)
 		case lexer::lexeme_type::identifier: // variable, function_name(<args>)
@@ -260,7 +260,7 @@ namespace seam::parser
 		return std::make_unique<ir::ast::statement::block>(utils::position_range{ start_position, lexer_.current_lexeme().position }, std::move(body));
 	}
 
-	types::function_signature parser::parse_function_signature()
+	std::shared_ptr<types::function_signature> parser::parse_function_signature()
 	{
 		const auto start_position = lexer_.current_lexeme().position;
 
@@ -278,6 +278,7 @@ namespace seam::parser
 		expect(lexer::lexeme_type::symbol_open_parenthesis);
 
 		// Generate parameter list
+		const auto param_list_pos = lexer_.current_lexeme().position;
 		auto param_list = parse_parameter_list();
 
 		expect(lexer::lexeme_type::symbol_close_parenthesis, true);
@@ -303,12 +304,19 @@ namespace seam::parser
 		ir::ast::attribute_list attribute_list;
 		while (lexer_.current_lexeme().type == lexer::lexeme_type::attribute)
 		{
-			attribute_list.insert(std::string{ lexer_.current_lexeme().value });
+			const auto attribute = std::string{ lexer_.current_lexeme().value };
+			if (attribute == "constructor" && !param_list.empty())
+			{
+				std::stringstream error_message;
+				error_message << "constructor function '" << function_name << "' cannot have parameters";
+				throw utils::parser_exception{ param_list_pos, error_message.str() };
+			}
+			attribute_list.insert(attribute);
 			lexer_.next_lexeme();
 		}
 
-		return types::function_signature{std::move(function_name), std::move(return_type),
-			std::move(param_list), std::move(attribute_list)};
+		return std::make_shared<types::function_signature>(current_module->name, std::move(function_name), std::move(return_type),
+			std::move(param_list), std::move(attribute_list));
 	}
 
 	std::unique_ptr<ir::ast::statement::function_definition> parser::parse_function_definition_statement()
@@ -320,16 +328,7 @@ namespace seam::parser
 		auto block = parse_block_statement();
 
 		return std::make_unique<ir::ast::statement::function_definition>(utils::position_range{ start_position, lexer_.current_lexeme().position },
-			std::move(signature), std::move(block));
-	}
-
-	std::unique_ptr<ir::ast::statement::extern_function_definition> parser::parse_extern_function_definition_statement()
-	{
-		const auto start_position = lexer_.current_lexeme().position;
-		auto signature = parse_function_signature();
-
-		return std::make_unique<ir::ast::statement::extern_function_definition>(utils::position_range{ start_position, lexer_.current_lexeme().position },
-			std::move(signature));
+			signature, std::move(block));
 	}
 
 	std::unique_ptr<ir::ast::statement::type_definition> parser::parse_type_definition_statement()
@@ -416,10 +415,6 @@ namespace seam::parser
 		{
 			return parse_type_definition_statement();
 		}
-		case lexer::lexeme_type::kw_extern: // Extern Definition
-		{
-			return parse_extern_function_definition_statement();
-		}
 		default:
 		{
 			std::stringstream error_message;
@@ -459,6 +454,9 @@ namespace seam::parser
 
 		return std::make_unique<ir::ast::statement::restricted_block>(utils::position_range{ start_position, lexer_.current_lexeme().position }, std::move(body));
 	}
+
+	parser::parser(std::shared_ptr<types::module> current_module, const std::string_view filename, const std::string_view source) :
+		current_module(current_module), filename_(filename), lexer_(current_module, source) {}
 
 	std::unique_ptr<ir::ast::statement::restricted_block> parser::parse()
 	{

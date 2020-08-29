@@ -1,7 +1,18 @@
 #include "expression.hpp"
+#include "visitor.hpp"
 
 namespace seam::ir::ast::expression
 {
+	void bool_literal::visit(visitor* vst)
+	{
+		vst->visit(this);
+	}
+
+	void string_literal::visit(visitor* vst)
+	{
+		vst->visit(this);
+	}
+
 	void unresolved_symbol::visit(visitor* vst)
 	{
 		vst->visit(this);
@@ -9,17 +20,21 @@ namespace seam::ir::ast::expression
 	
 	void variable::visit(visitor* vst)
 	{
-		vst->visit(this);
-		value->visit(vst);
+		if (vst->visit(this))
+		{
+			value->visit(vst);
+		}
 	}
 
 	void call::visit(visitor* vst)
 	{
-		vst->visit(this);
-		function->visit(vst);
-		for (const auto& argument : arguments)
+		if (vst->visit(this))
 		{
-			argument->visit(vst);
+			function->visit(vst);
+			for (const auto& argument : arguments)
+			{
+				argument->visit(vst);
+			}
 		}
 	}
 }

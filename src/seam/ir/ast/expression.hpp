@@ -1,7 +1,15 @@
 #pragma once
 
+#include <vector>
+#include <memory>
+#include <string>
+
 #include "node.hpp"
-#include "visitor.hpp"
+
+namespace seam::ir::ast
+{
+	struct visitor;
+}
 
 namespace seam::ir::ast::expression
 {	
@@ -15,18 +23,35 @@ namespace seam::ir::ast::expression
 
 	using expression_list = std::vector<std::unique_ptr<expression>>;
 
-	template <typename T>
-	struct literal final : expression
+	struct literal : expression
 	{		
-		T value;
+		void visit(visitor* vst) override = 0;
 
-		explicit literal(const utils::position_range range, T value)
-			: expression(range), value(std::move(value)) {}
-		
-		void visit(visitor* vst) override
-		{
-			vst->visit(this);
-		}
+		explicit literal(utils::position_range range) :
+			expression(range)
+		{}
+	};
+
+	struct bool_literal : literal
+	{
+		bool value;
+
+		explicit bool_literal(utils::position_range range, bool value) :
+			literal(range), value(value)
+		{}
+
+		void visit(visitor* vst) override;
+	};
+
+	struct string_literal : literal
+	{
+		std::string value;
+
+		explicit string_literal(utils::position_range range, std::string value) :
+			literal(range), value(std::move(value))
+		{}
+
+		void visit(visitor* vst) override;
 	};
 
 	struct unresolved_symbol final : expression

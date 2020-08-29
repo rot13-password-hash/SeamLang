@@ -12,7 +12,6 @@ namespace seam::lexer
 	const lexeme_map_t keyword_map
 	{
 		{ "fn", lexeme_type::kw_fn },
-		{ "extern", lexeme_type::kw_extern },
 		{ "as", lexeme_type::kw_as },
 		{ "return", lexeme_type::kw_return },
 		{ "type", lexeme_type::kw_type },
@@ -39,11 +38,17 @@ namespace seam::lexer
 		{ "{", lexeme_type::symbol_open_brace },
 		{ "}", lexeme_type::symbol_close_brace },
 		{ "->", lexeme_type::symbol_arrow },
-		{ "=", lexeme_type::symbol_equals },
-		{ ":=", lexeme_type::symbol_declare },
+		{ "=", lexeme_type::symbol_assign },
 		{ "?", lexeme_type::symbol_question_mark },
 		{ ":", lexeme_type::symbol_colon },
+		{ ":=", lexeme_type::symbol_colon_equals },
 		{ ",", lexeme_type::symbol_comma },
+		{ "==", lexeme_type::symbol_eq },
+		{ "!=", lexeme_type::symbol_neq },
+		{ "<", lexeme_type::symbol_lt },
+		{ "<=", lexeme_type::symbol_lteq },
+		{ ">", lexeme_type::symbol_gt },
+		{ ">=", lexeme_type::symbol_gteq },
 	};
 
 	const std::unordered_set<std::string> attributes = { "constructor", "export" };
@@ -294,8 +299,8 @@ namespace seam::lexer
 		}
 	}
 	
-	lexer::lexer(const std::string_view& source)
-		: source_(source) {}
+	lexer::lexer(std::shared_ptr<types::module> current_module, const std::string_view& source)
+		: current_module(current_module), source_(source) {}
 
 	void lexer::next_lexeme()
 	{

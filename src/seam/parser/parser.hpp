@@ -2,14 +2,18 @@
 
 #include "../ir/ast/expression.hpp"
 #include "../lexer/lexer.hpp"
+#include "../types/module.hpp"
+
+#include <memory>
 
 namespace seam::parser
 {
 	class parser
 	{
+		std::shared_ptr<types::module> current_module;
+
 		std::string_view filename_; // name of file currently being parsed.
 		lexer::lexer lexer_; // current lexer instance.
-
 
 		/**
 		 * 
@@ -65,7 +69,7 @@ namespace seam::parser
 		 * Attempts to parse a prefix expression and returns internal representation of
 		 * said expression.
 		 *
-		 * @returns a unique pointer to an expression node when successful, otherwise Error.
+		 * @returns a unique pointer to an expression node when successful, otherwise throws an exception.
 		 */
 		std::unique_ptr<ir::ast::expression::expression> parse_prefix_expression();
 		
@@ -75,7 +79,7 @@ namespace seam::parser
 		 * Attempts to parse an expression and returns internal representation of
 		 * said expression.
 		 *
-		 * @returns a unique pointer to an expression node when successful, otherwise Error.
+		 * @returns a unique pointer to an expression node when successful, otherwise throws an exception.
 		 */
 		std::unique_ptr<ir::ast::expression::expression> parse_expression();
 
@@ -87,35 +91,28 @@ namespace seam::parser
 		 * A block is considered to be the main body of any method,
 		 * and can contain both statements and expressions.
 		 *
-		 * @returns a unique pointer to a block ast node when successful, otherwise Error.
+		 * @returns a unique pointer to a block ast node when successful, otherwise throws an exception.
 		 */
 		std::unique_ptr<ir::ast::statement::block> parse_block_statement();
 
 		/**
 		 * Parses a function definition statement.
 		 *
-		 * @returns a unique pointer to a function definition ast node when successful, otherwise Error.
+		 * @returns a unique pointer to a function definition ast node when successful, otherwise throws an exception.
 		 */
-		types::function_signature parse_function_signature();
+		std::shared_ptr<types::function_signature> parse_function_signature();
 
 		/**
 		 * Parses a function definition statement.
 		 *
-		 * @returns a unique pointer to a function definition ast node when successful, otherwise Error.
+		 * @returns a unique pointer to a function definition ast node when successful, otherwise throws an exception.
 		 */
 		std::unique_ptr<ir::ast::statement::function_definition> parse_function_definition_statement();
-
-		/**
-		 * Parses an extern function definition statement.
-		 *
-		 * @returns a unique pointer to an extern function definition ast node when successful, otherwise Error.
-		 */
-		std::unique_ptr<ir::ast::statement::extern_function_definition> parse_extern_function_definition_statement();
 		
 		/**
 		 * Parses a type definition statement.
 		 *
-		 * @returns a unique pointer to a type definition ast node when successful, otherwise Error.
+		 * @returns a unique pointer to a type definition ast node when successful, otherwise throws an exception.
 		 */
 		std::unique_ptr<ir::ast::statement::type_definition> parse_type_definition_statement();
 		
@@ -128,7 +125,7 @@ namespace seam::parser
 		 * - type
 		 * - extern
 		 *
-		 * @returns a unique pointer to a restricted statement ast node when successful, otherwise Error.
+		 * @returns a unique pointer to a restricted statement ast node when successful, otherwise throws an exception.
 		 */
 		std::unique_ptr<ir::ast::statement::restricted> parse_restricted_statement();
 		
@@ -143,7 +140,7 @@ namespace seam::parser
 		 * - extern
 		 *
 		 * @param is_type_scope whether we're parsing in a type scope.
-		 * @returns a unique pointer to a restricted block ast node when successful, otherwise Error.
+		 * @returns a unique pointer to a restricted block ast node when successful, otherwise throws an exception.
 		 */
 		std::unique_ptr<ir::ast::statement::restricted_block> parse_restricted_block_statement(bool is_type_scope = false);
 	public:
@@ -151,11 +148,11 @@ namespace seam::parser
 		 * Initialise parser with name of file being parsed, as well
 		 * as its respective source.
 		 *
+		 * @param current_module the module to be parsed.
 		 * @param filename name of file to be parsed.
 		 * @param source source of file to parse.
 		 */
-		explicit parser(const std::string_view filename, const std::string_view source) :
-			filename_(filename), lexer_(source) {}
+		explicit parser(std::shared_ptr<types::module> current_module, const std::string_view filename, const std::string_view source);
 
 		/**
 		 * TODO: Comment this

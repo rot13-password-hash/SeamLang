@@ -2,6 +2,9 @@
 
 #include "lexeme.hpp"
 #include "../utils/position.hpp"
+#include "../types/module.hpp"
+
+#include <memory>
 
 namespace seam::lexer
 {
@@ -11,6 +14,8 @@ namespace seam::lexer
 	class lexer
 	{
 		constexpr static char eof_character = -1;
+
+		std::shared_ptr<types::module> current_module;
 
 		std::string_view source_;
 
@@ -37,7 +42,7 @@ namespace seam::lexer
 		 *
 		 * @param source source to lex.
 		 */
-		explicit lexer(const std::string_view& source);
+		explicit lexer(std::shared_ptr<types::module> current_module, const std::string_view& source);
 
 		/**
 		 * Retrieves the current lexeme.

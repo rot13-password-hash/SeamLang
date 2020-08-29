@@ -33,15 +33,22 @@ namespace seam::lexer
 		symbol_open_brace,
 		symbol_close_brace,
 		symbol_arrow,
-		symbol_equals,
-		symbol_declare,
+		symbol_assign,
 		symbol_question_mark,
 		symbol_colon,
+		symbol_colon_equals,
 		symbol_comma,
 		
+		// comparison symbols
+		symbol_eq,
+		symbol_neq,
+		symbol_lt,
+		symbol_lteq,
+		symbol_gt,
+		symbol_gteq,
+
 		// keywords
 		kw_fn,
-		kw_extern,
 		kw_as,
 		kw_return,
 		kw_type,
@@ -88,10 +95,18 @@ namespace seam::lexer
 				case lexeme_type::symbol_open_brace: return "{";
 				case lexeme_type::symbol_close_brace: return "}";
 				case lexeme_type::symbol_arrow: return "->";
-				case lexeme_type::symbol_colon: return "=";
+				case lexeme_type::symbol_assign: return "=";
+				case lexeme_type::symbol_question_mark: return "?";
+				case lexeme_type::symbol_colon: return ":";
+				case lexeme_type::symbol_colon_equals: return ":=";
 				case lexeme_type::symbol_comma: return ",";
+				case lexeme_type::symbol_eq: return "==";
+				case lexeme_type::symbol_neq: return "!=";
+				case lexeme_type::symbol_lt: return "<";
+				case lexeme_type::symbol_lteq: return "<=";
+				case lexeme_type::symbol_gt: return ">";
+				case lexeme_type::symbol_gteq: return ">=";
 				case lexeme_type::kw_fn: return "fn";
-				case lexeme_type::kw_extern: return "extern";
 				case lexeme_type::kw_as: return "as";
 				case lexeme_type::kw_return: return "return";
 				case lexeme_type::kw_type: return "type";

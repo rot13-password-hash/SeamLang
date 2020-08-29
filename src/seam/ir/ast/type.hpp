@@ -10,53 +10,44 @@
 
 namespace seam::ir::ast
 {
-	struct unresolved_type : ir::ast::node
+	struct type : ir::ast::node
 	{
 		std::string name;
 		bool is_optional = false;
 
-		unresolved_type()
-			: node({}) {}
-		
-		unresolved_type(const utils::position_range range)
-			: node(range) {}
+		explicit type(utils::position_range range, std::string name, bool is_optional) :
+			node(range),
+			name(std::move(name)),
+			is_optional(is_optional)
+		{}
+	};
 
-		unresolved_type(const utils::position_range range, std::string name, const bool is_optional)
-			: node(range), name(std::move(name)), is_optional(is_optional) {}
+	struct unresolved_type final : type
+	{
+		void visit(visitor* vst) override;
 
-		unresolved_type(unresolved_type&& other) noexcept
-			: node(other.range),
-			name(std::move(other.name)),
-			is_optional(other.is_optional) {}
+		unresolved_type(utils::position_range range, std::string name, bool is_optional) :
+			type(range, name, is_optional)
+		{}
+	};
 
-		unresolved_type(unresolved_type& other) = default;
+	struct resolved_type final : type
+	{
+		explicit resolved_type(utils::position_range range) :
+			type(range, {}, false)
+		{}
 
-		unresolved_type& operator=(unresolved_type&& other) noexcept
+		bool can_implicitly_cast(resolved_type* other)
 		{
-			range = other.range;
-			name = std::move(other.name);
-			is_optional = other.is_optional;
+			return false;
+		}
 
-			return *this;
+		bool is_compatible(resolved_type* other)
+		{
+			return this == other || can_implicitly_cast(other);
 		}
 
 		void visit(visitor* vst) override;
-	};
-
-	struct resolved_type : node
-	{
-		std::string name;
-
-		resolved_type() :
-			node({}) {}
-		
-		void visit(visitor* vst) override;
-	};
-
-	template <typename T>
-	struct built_in_type final : resolved_type
-	{
-		T value;
 	};
 
 	using type_reference = std::variant<unresolved_type>;

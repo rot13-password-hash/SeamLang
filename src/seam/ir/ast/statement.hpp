@@ -8,12 +8,7 @@
 
 #include "node.hpp"
 #include "../../types/function_signature.hpp"
-#include "../ast/expression.hpp"
-
-namespace seam::ir::ast::expression
-{
-	struct expression;
-}
+#include "expression.hpp"
 
 namespace seam::ir::ast::statement
 {	
@@ -69,24 +64,15 @@ namespace seam::ir::ast::statement
 
 	struct function_definition final : restricted
 	{
-		types::function_signature signature;
+		std::shared_ptr<types::function_signature> signature;
 		std::unique_ptr<block> body;
+		std::unordered_set<std::shared_ptr<types::function_signature>> function_dependencies;
 
 		void visit(visitor* vst) override;
 
-		explicit function_definition(const utils::position_range range, types::function_signature signature, std::unique_ptr<block> body) :
-			restricted(range), signature(std::move(signature)), body(std::move(body)) {}
+		explicit function_definition(const utils::position_range range, std::shared_ptr<types::function_signature> signature, std::unique_ptr<block> body) :
+			restricted(range), signature(signature), body(std::move(body)) {}
 	
-	};
-
-	struct extern_function_definition final : restricted
-	{
-		types::function_signature signature;
-
-		void visit(visitor* vst) override;
-
-		explicit extern_function_definition(const utils::position_range range, types::function_signature signature) :
-			restricted(range), signature(std::move(signature)) {}
 	};
 
 	struct type_definition : restricted

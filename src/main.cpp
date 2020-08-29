@@ -2,26 +2,26 @@
 
 #include "seam/parser/parser.hpp"
 #include "seam/utils/exception.hpp"
+#include "seam/types/module.hpp"
+#include "seam/code_generation/code_generation.hpp"
+
+#include <memory>
 
 int main()
 {
-	seam::parser::parser parser("test", R"(
-		type my_type = i32
+	const auto module = std::make_shared<seam::types::module>("test_module");
 
-		fn test()
-		{
-
-		}
-
-		fn main() @constructor
-		{
-			test()
-		}
+	seam::parser::parser parser(module, "test", R"(
+type a = i32
+type a = i32
 	)");
 	
 	try
 	{
-		auto root = parser.parse();
+		module->body = parser.parse();
+
+		//seam::code_generation::code_generation code_gen{ module.get() };
+		//code_gen.generate();
 	}
 	catch (const seam::utils::exception& ex)
 	{

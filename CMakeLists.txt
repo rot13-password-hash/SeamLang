@@ -21,8 +21,12 @@ add_executable(compiler
 	src/seam/lexer/lexer.cpp 
 	src/seam/parser/parser.cpp
 	src/seam/ir/ast/statement.cpp
-	
-	src/seam/ir/ast/expression.cpp "src/seam/types/function_signature.hpp" "src/seam/ir/ast/type.cpp" src/seam/parser/passes/pass.cpp src/seam/parser/passes/symbol_resolver.cpp)
+	src/seam/ir/ast/expression.cpp 
+	src/seam/types/function_signature.hpp
+	src/seam/ir/ast/type.cpp 
+	src/seam/parser/passes/pass.cpp
+	src/seam/parser/passes/symbol_collector.cpp
+	src/seam/parser/passes/function_dependency.cpp)
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use
@@ -34,6 +38,6 @@ target_link_libraries(compiler ${LLVM_LIBS})
 # Test Suites
 add_executable(lexer_test
 	src/tests/lexer_test_suite.cpp
-	src/seam/lexer/lexer.cpp)
+	src/seam/lexer/lexer.cpp "src/seam/parser/passes/function_dependency.cpp")
 
 target_link_libraries(lexer_test ${LLVM_LIBS})
