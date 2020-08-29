@@ -6,6 +6,8 @@
 int main()
 {
 	seam::parser::parser parser("test", R"(
+		type my_type = i32
+
 		fn test()
 		{
 
@@ -16,12 +18,10 @@ int main()
 			test()
 		}
 	)");
-
-	llvm::ExitOnError exitOnErr{};
+	
 	try
 	{
 		auto root = parser.parse();
-		exitOnErr(root.takeError());
 	}
 	catch (const seam::utils::exception& ex)
 	{

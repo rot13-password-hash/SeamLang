@@ -1,8 +1,10 @@
 #include "lexer.hpp"
 #include "../utils/exception.hpp"
 
+#include <sstream>
 #include <cctype>
 #include <unordered_map>
+#include <unordered_set>
 
 namespace seam::lexer
 {
@@ -43,6 +45,8 @@ namespace seam::lexer
 		{ ":", lexeme_type::symbol_colon },
 		{ ",", lexeme_type::symbol_comma },
 	};
+
+	const std::unordered_set<std::string> attributes = { "constructor", "export" };
 	
 	bool is_start_identifier_char(const char value)
 	{
@@ -248,7 +252,16 @@ namespace seam::lexer
 			if (!is_identifier_char(next_char))
 			{
 				current_.type = lexeme_type::attribute;
-				current_.value = source_.substr(start_offset, read_offset_ - start_offset);
+
+				const auto proposed_attribute = source_.substr(start_offset, read_offset_ - start_offset);
+				if (attributes.find(std::string{ proposed_attribute }) == attributes.cend())
+				{
+					std::stringstream error_message;
+					error_message << "unknown attribute: '" << proposed_attribute << "'";
+					throw utils::lexical_exception{ current_position(), error_message.str() };
+				}
+
+				current_.value = proposed_attribute;
 				break;
 			}
 

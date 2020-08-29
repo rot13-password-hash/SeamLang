@@ -7,11 +7,16 @@
 #include <vector>
 
 #include "node.hpp"
-#include "type.hpp"
+#include "../../types/function_signature.hpp"
 #include "../ast/expression.hpp"
-namespace seam::ir::ast
+
+namespace seam::ir::ast::expression
 {
 	struct expression;
+}
+
+namespace seam::ir::ast::statement
+{	
 	struct statement : node
 	{
 		explicit statement(const utils::position_range range)
@@ -22,24 +27,23 @@ namespace seam::ir::ast
 
 	using statement_list = std::vector<std::unique_ptr<statement>>;
 
-	struct restricted_statement : statement
+	struct restricted : statement
 	{
-		explicit restricted_statement(const utils::position_range range)
+		explicit restricted(const utils::position_range range)
 			: statement(range) {}
 
-		virtual ~restricted_statement() = default;
+		virtual ~restricted() = default;
 	};
 
-	using restricted_statement_list = std::vector<std::unique_ptr<restricted_statement>>;
+	using restricted_list = std::vector<std::unique_ptr<restricted>>;
 
 	struct restricted_block final : statement
 	{	
-		restricted_statement_list body;
+		restricted_list body;
 
-		void visit(base_visitor* vst) override;
-		void visit_children(base_visitor* vst);
+		void visit(visitor* vst) override;
 
-		explicit restricted_block(const utils::position_range range, restricted_statement_list body)
+		explicit restricted_block(const utils::position_range range, restricted_list body)
 			: statement(range), body(std::move(body)) {}
 	};
 
@@ -47,87 +51,57 @@ namespace seam::ir::ast
 	{
 		statement_list body;
 		
-		void visit(base_visitor* vst) override;
-		void visit_children(base_visitor* vst);
+		void visit(visitor* vst) override;
 
 		explicit block(const utils::position_range range, statement_list body)
 			: statement(range), body(std::move(body)) {}
 	};
 
-	struct return_statement final : statement
+	struct ret final : statement
 	{
-		std::unique_ptr<expression> value;
+		std::unique_ptr<expression::expression> value;
 
-		void visit(base_visitor* vst) override;
-		void visit_children(base_visitor* vst);
+		void visit(visitor* vst) override;
 
-		explicit return_statement(utils::position_range range, std::unique_ptr<expression> return_value) :
+		explicit ret(const utils::position_range range, std::unique_ptr<expression::expression> return_value) :
 			statement(range), value(std::move(return_value)) {}
 	};
-	
-	struct parameter final
-	{		
-		type param_type;
-		std::string name;
 
-		explicit parameter(type param_type, std::string name) :
-			param_type(std::move(param_type)), name(std::move(name)) {}
-	};
-
-	using parameter_list = std::vector<parameter>;
-	using attribute_list = std::unordered_set<std::string>;
-	
-	struct function_signature final
+	struct function_definition final : restricted
 	{
-		std::string name;
-		type return_type;
-		std::vector<parameter> parameters;
-		std::unordered_set<std::string> attributes;
-
-		explicit function_signature(std::string name, type return_type, parameter_list parameters,
-			attribute_list attributes) :
-			name(std::move(name)),
-			return_type(std::move(return_type)),
-			parameters(std::move(parameters)),
-			attributes(std::move(attributes)) {}
-	};
-
-	struct function_definition final : restricted_statement
-	{
-		std::unique_ptr<function_signature> signature;
+		types::function_signature signature;
 		std::unique_ptr<block> body;
 
-		void visit(base_visitor* vst) override;
-		void visit_children(base_visitor* vst);
+		void visit(visitor* vst) override;
 
-		explicit function_definition(const utils::position_range range, std::unique_ptr<function_signature> signature, std::unique_ptr<block> body) :
-			restricted_statement(range), signature(std::move(signature)), body(std::move(body)) {}
+		explicit function_definition(const utils::position_range range, types::function_signature signature, std::unique_ptr<block> body) :
+			restricted(range), signature(std::move(signature)), body(std::move(body)) {}
 	
 	};
 
-	struct extern_function_definition final : restricted_statement
+	struct extern_function_definition final : restricted
 	{
-		function_signature signature;
+		types::function_signature signature;
 
-		void visit(base_visitor* vst) override;
+		void visit(visitor* vst) override;
 
-		explicit extern_function_definition(function_signature signature) :
-			restricted_statement(range), signature(signature) {}
+		explicit extern_function_definition(const utils::position_range range, types::function_signature signature) :
+			restricted(range), signature(std::move(signature)) {}
 	};
 
-	struct type_definition : restricted_statement
+	struct type_definition : restricted
 	{
-		using restricted_statement::restricted_statement;
+		using restricted::restricted;
 	};
 
 	struct alias_type_definition final : type_definition
 	{
 		std::string name;
-		type target_type;
+		std::unique_ptr<unresolved_type> target_type;
 
-		void visit(base_visitor* vst) override;
+		void visit(visitor* vst) override;
 
-		explicit alias_type_definition(const utils::position_range range, std::string name, type target_type) :
+		explicit alias_type_definition(const utils::position_range range, std::string name, std::unique_ptr<unresolved_type> target_type) :
 			type_definition(range), name(std::move(name)), target_type(std::move(target_type)) {}
 	};
 
@@ -137,8 +111,7 @@ namespace seam::ir::ast
 		parameter_list fields;
 		std::unique_ptr<restricted_block> body;
 
-		void visit(base_visitor* vst) override;
-		void visit_children(base_visitor* vst);
+		void visit(visitor* vst) override;
 
 		explicit class_type_definition(const utils::position_range range, std::string name, parameter_list fields,
 			std::unique_ptr<restricted_block> body) :

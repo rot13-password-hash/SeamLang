@@ -1,7 +1,5 @@
 #pragma once
 
-#include <llvm/Support/Error.h>
-
 #include "../ir/ast/expression.hpp"
 #include "../lexer/lexer.hpp"
 
@@ -23,13 +21,9 @@ namespace seam::parser
 		 *
 		 * @param type expected lexeme type.
 		 * @param consume whether lexeme should be consumed automatically.
-		 *
-		 * @note For a better understanding of this method, it is encouraged that you
-		 *		 read the documentation relating to the llvm::Error class.
-		 *
-		 * @returns llvm::Error if current lexeme does not match expected, otherwise success.
+
 		 */
-		llvm::Error expect(lexer::lexeme_type type, bool consume = false);
+		void expect(lexer::lexeme_type type, bool consume = false);
 
 		/**
 		 * Parses a type.
@@ -39,7 +33,7 @@ namespace seam::parser
 		 *
 		 * @returns a type.
 		 */
-		llvm::Expected<ir::ast::type> parse_type();
+		std::unique_ptr<ir::ast::unresolved_type> parse_type();
 
 		/**
 		 * Parses a parameter.
@@ -49,7 +43,7 @@ namespace seam::parser
 		 *
 		 * @returns a parameter.
 		 */
-		llvm::Expected<ir::ast::parameter> parse_parameter();
+		ir::ast::parameter parse_parameter();
 
 		/**
 		 * Parses a parameter list.
@@ -59,11 +53,11 @@ namespace seam::parser
 		 *
 		 * @returns a vector of parameters.
 		 */
-		llvm::Expected<ir::ast::parameter_list> parse_parameter_list();
+		ir::ast::parameter_list parse_parameter_list();
 
-		llvm::Expected<ir::ast::expression_list> parse_expression_list();
+		ir::ast::expression::expression_list parse_expression_list();
 		
-		llvm::Expected<std::unique_ptr<ir::ast::call_expression>> parse_call_expression(std::unique_ptr<ir::ast::expression> function);
+		std::unique_ptr<ir::ast::expression::call> parse_call_expression(std::unique_ptr<ir::ast::expression::expression> function);
 		
 		/**
 		 * Parses any generic prefix expression.
@@ -71,9 +65,9 @@ namespace seam::parser
 		 * Attempts to parse a prefix expression and returns internal representation of
 		 * said expression.
 		 *
-		 * @returns a unique pointer to an expression node when successful, otherwise llvm::Error.
+		 * @returns a unique pointer to an expression node when successful, otherwise Error.
 		 */
-		llvm::Expected<std::unique_ptr<ir::ast::expression>> parse_prefix_expression();
+		std::unique_ptr<ir::ast::expression::expression> parse_prefix_expression();
 		
 		/**
 		 * Parses any generic expression.
@@ -81,11 +75,11 @@ namespace seam::parser
 		 * Attempts to parse an expression and returns internal representation of
 		 * said expression.
 		 *
-		 * @returns a unique pointer to an expression node when successful, otherwise llvm::Error.
+		 * @returns a unique pointer to an expression node when successful, otherwise Error.
 		 */
-		llvm::Expected<std::unique_ptr<ir::ast::expression>> parse_expression();
+		std::unique_ptr<ir::ast::expression::expression> parse_expression();
 
-		llvm::Expected<std::unique_ptr<ir::ast::return_statement>> parse_return_statement();
+		std::unique_ptr<ir::ast::statement::ret> parse_return_statement();
 		
 		/**
 		 * Parses a block statement.
@@ -93,37 +87,37 @@ namespace seam::parser
 		 * A block is considered to be the main body of any method,
 		 * and can contain both statements and expressions.
 		 *
-		 * @returns a unique pointer to a block ast node when successful, otherwise llvm::Error.
+		 * @returns a unique pointer to a block ast node when successful, otherwise Error.
 		 */
-		llvm::Expected<std::unique_ptr<ir::ast::block>> parse_block_statement();
+		std::unique_ptr<ir::ast::statement::block> parse_block_statement();
 
 		/**
 		 * Parses a function definition statement.
 		 *
-		 * @returns a unique pointer to a function definition ast node when successful, otherwise llvm::Error.
+		 * @returns a unique pointer to a function definition ast node when successful, otherwise Error.
 		 */
-		llvm::Expected<std::unique_ptr<ir::ast::function_signature>> parse_function_signature();
+		types::function_signature parse_function_signature();
 
 		/**
 		 * Parses a function definition statement.
 		 *
-		 * @returns a unique pointer to a function definition ast node when successful, otherwise llvm::Error.
+		 * @returns a unique pointer to a function definition ast node when successful, otherwise Error.
 		 */
-		llvm::Expected<std::unique_ptr<ir::ast::function_definition>> parse_function_definition_statement();
+		std::unique_ptr<ir::ast::statement::function_definition> parse_function_definition_statement();
 
 		/**
 		 * Parses an extern function definition statement.
 		 *
-		 * @returns a unique pointer to an extern function definition ast node when successful, otherwise llvm::Error.
+		 * @returns a unique pointer to an extern function definition ast node when successful, otherwise Error.
 		 */
-		llvm::Expected<std::unique_ptr<ir::ast::extern_function_definition>> parse_extern_function_definition_statement();
+		std::unique_ptr<ir::ast::statement::extern_function_definition> parse_extern_function_definition_statement();
 		
 		/**
 		 * Parses a type definition statement.
 		 *
-		 * @returns a unique pointer to a type definition ast node when successful, otherwise llvm::Error.
+		 * @returns a unique pointer to a type definition ast node when successful, otherwise Error.
 		 */
-		llvm::Expected<std::unique_ptr<ir::ast::type_definition>> parse_type_definition_statement();
+		std::unique_ptr<ir::ast::statement::type_definition> parse_type_definition_statement();
 		
 		/**
 		 * Parses a restricted statement.
@@ -134,9 +128,9 @@ namespace seam::parser
 		 * - type
 		 * - extern
 		 *
-		 * @returns a unique pointer to a restricted statement ast node when successful, otherwise llvm::Error.
+		 * @returns a unique pointer to a restricted statement ast node when successful, otherwise Error.
 		 */
-		llvm::Expected<std::unique_ptr<ir::ast::restricted_statement>> parse_restricted_statement();
+		std::unique_ptr<ir::ast::statement::restricted> parse_restricted_statement();
 		
 		/**
 		 * Parses a restricted block statement.
@@ -149,9 +143,9 @@ namespace seam::parser
 		 * - extern
 		 *
 		 * @param is_type_scope whether we're parsing in a type scope.
-		 * @returns a unique pointer to a restricted block ast node when successful, otherwise llvm::Error.
+		 * @returns a unique pointer to a restricted block ast node when successful, otherwise Error.
 		 */
-		llvm::Expected<std::unique_ptr<ir::ast::restricted_block>> parse_restricted_block_statement(bool is_type_scope = false);
+		std::unique_ptr<ir::ast::statement::restricted_block> parse_restricted_block_statement(bool is_type_scope = false);
 	public:
 		/**
 		 * Initialise parser with name of file being parsed, as well
@@ -166,6 +160,6 @@ namespace seam::parser
 		/**
 		 * TODO: Comment this
 		 */
-		llvm::Expected<std::unique_ptr<ir::ast::restricted_block>> parse();
+		std::unique_ptr<ir::ast::statement::restricted_block> parse();
 	};
 }

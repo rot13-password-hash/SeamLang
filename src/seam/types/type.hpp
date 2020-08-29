@@ -1,14 +1,11 @@
 #pragma once
 
-#include <memory>
 #include <string>
 #include <variant>
 #include <vector>
 #include <unordered_set>
 
-#include "node.hpp"
-
-namespace seam::ir::ast
+namespace seam::types
 {
 	struct unresolved_type : ir::ast::node
 	{
@@ -40,17 +37,12 @@ namespace seam::ir::ast
 			return *this;
 		}
 
-		void visit(visitor* vst) override;
+		void visit(ir::ast::visitor* vst) override;
 	};
 
-	struct resolved_type : node
+	struct resolved_type : ir::ast::node
 	{
 		std::string name;
-
-		resolved_type() :
-			node({}) {}
-		
-		void visit(visitor* vst) override;
 	};
 
 	template <typename T>
@@ -63,10 +55,10 @@ namespace seam::ir::ast
 
 	struct parameter
 	{
-		std::unique_ptr<unresolved_type> param_type;
+		unresolved_type param_type;
 		std::string name;
 
-		explicit parameter(std::unique_ptr<unresolved_type> param_type, std::string name) :
+		explicit parameter(unresolved_type param_type, std::string name) :
 			param_type(std::move(param_type)), name(std::move(name)) {}
 	};
 

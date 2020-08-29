@@ -1,70 +1,52 @@
-#include "base_visitor.hpp"
+#include "visitor.hpp"
 
-namespace seam::ir::ast
+namespace seam::ir::ast::statement
 {
-	void restricted_block::visit(base_visitor* vst)
+	void restricted_block::visit(visitor* vst)
 	{
-		vst->base_visit(this);
-	}
-	
-	void restricted_block::visit_children(base_visitor* vst)
-	{
+		vst->visit(this);
 		for (const auto& statement : body)
 		{
 			statement->visit(vst);
 		}
 	}
 	
-	void function_definition::visit(base_visitor* vst)
+	void function_definition::visit(visitor* vst)
 	{
-		vst->base_visit(this);
-	}
-	
-	void function_definition::visit_children(base_visitor* vst)
-	{
-		body->visit(vst);
-	}
-
-	void extern_function_definition::visit(base_visitor* vst)
-	{
-		vst->base_visit(this);
-	}
-	
-	void alias_type_definition::visit(base_visitor* vst)
-	{
-		vst->base_visit(this);
-	}
-	
-	void class_type_definition::visit(base_visitor* vst)
-	{
-		vst->base_visit(this);
-	}
-	
-	void class_type_definition::visit_children(base_visitor* vst)
-	{
+		vst->visit(this);
 		body->visit(vst);
 	}
 	
-	void block::visit(base_visitor* vst)
+	void extern_function_definition::visit(visitor* vst)
 	{
-		vst->base_visit(this);
+		vst->visit(this);
 	}
-
-	void block::visit_children(base_visitor* vst)
+	
+	void alias_type_definition::visit(visitor* vst)
 	{
+		vst->visit(this);
+		target_type->visit(vst);
+	}
+	
+	void class_type_definition::visit(visitor* vst)
+	{
+		vst->visit(this);
+		body->visit(vst);
+	}
+	
+	void block::visit(visitor* vst)
+	{
+		vst->visit(this);
+		
 		for (const auto& statement : body)
 		{
 			statement->visit(vst);
 		}
 	}
-	
-	void return_statement::visit(base_visitor* vst)
-	{
-		vst->base_visit(this);
-	}
 
-	void return_statement::visit_children(base_visitor* vst)
+	void ret::visit(visitor* vst)
 	{
+		vst->visit(this);
 		value->visit(vst);
 	}
 

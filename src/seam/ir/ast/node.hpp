@@ -4,18 +4,18 @@
 
 namespace seam::ir::ast
 {
-	struct base_visitor;
+	struct visitor;
 	struct node
 	{
 		utils::position_range range; // the range of text the node ranges over. 
 
 		/**
-		 * Virtual visit method for base_visitor pattern.
+		 * Virtual visit method for visitor pattern.
 		 *
-		 * @param vst base_visitor
+		 * @param vst visitor
 		 * @note not implemented for base node, will throw exception.
 		 */
-		virtual void visit(base_visitor* vst) = 0;
+		virtual void visit(visitor* vst) = 0;
 
 		virtual ~node() = default;
 	protected:

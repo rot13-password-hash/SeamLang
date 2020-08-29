@@ -11,7 +11,7 @@ namespace seam::utils
 	{
 		utils::position position;
 
-		explicit exception(const utils::position position, const std::string& msg) :
+		explicit exception(utils::position position, const std::string& msg) :
 			std::runtime_error(msg.c_str()), position(position)
 		{}
 	};
@@ -21,7 +21,7 @@ namespace seam::utils
 	 */
 	struct lexical_exception final : exception
 	{
-		explicit lexical_exception(const utils::position position, const std::string& msg) :
+		explicit lexical_exception(utils::position position, const std::string& msg) :
 			exception(position, msg) {}
 	};
 
@@ -30,7 +30,7 @@ namespace seam::utils
 	 */
 	struct parser_exception final : exception
 	{
-		explicit parser_exception(const utils::position position, const std::string& msg) :
+		explicit parser_exception(utils::position position, const std::string& msg) :
 			exception(position, msg) {}
 	};
 }
