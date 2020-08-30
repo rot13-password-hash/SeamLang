@@ -28,7 +28,8 @@ add_executable(compiler
 	src/seam/parser/passes/pass.cpp
 	src/seam/parser/passes/type_collector.cpp
 	src/seam/parser/passes/function_dependency.cpp
-	src/seam/parser/passes/type_resolver.cpp "src/seam/parser/passes/number_resolver.cpp")
+	src/seam/parser/passes/type_resolver.cpp
+	src/seam/parser/passes/number_resolver.cpp)
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use
@@ -37,15 +38,11 @@ llvm_map_components_to_libnames(LLVM_LIBS support core irreader ${LLVM_TARGETS_T
 # Link against LLVM libraries
 target_link_libraries(compiler ${LLVM_LIBS})
 
-set_property(TARGET compiler PROPERTY
-             MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
-
 # Test Suites
 add_executable(lexer_test
 	src/tests/lexer_test_suite.cpp
-	src/seam/lexer/lexer.cpp "src/seam/parser/passes/function_dependency.cpp" "src/seam/parser/passes/number_resolver.cpp")
+	src/seam/lexer/lexer.cpp
+	src/seam/parser/passes/function_dependency.cpp
+	src/seam/parser/passes/number_resolver.cpp)
 
 target_link_libraries(lexer_test ${LLVM_LIBS})
-
-set_property(TARGET lexer_test PROPERTY
-             MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
