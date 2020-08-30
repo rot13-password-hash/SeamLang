@@ -3,6 +3,7 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <variant>
 
 #include "node.hpp"
 
@@ -12,7 +13,7 @@ namespace seam::ir::ast
 }
 
 namespace seam::ir::ast::expression
-{	
+{
 	struct expression : node
 	{
 		explicit expression(const utils::position_range range)
@@ -24,7 +25,7 @@ namespace seam::ir::ast::expression
 	using expression_list = std::vector<std::unique_ptr<expression>>;
 
 	struct literal : expression
-	{		
+	{
 		void visit(visitor* vst) override = 0;
 
 		explicit literal(utils::position_range range) :
@@ -32,7 +33,7 @@ namespace seam::ir::ast::expression
 		{}
 	};
 
-	struct bool_literal : literal
+	struct bool_literal final : literal
 	{
 		bool value;
 
@@ -43,7 +44,7 @@ namespace seam::ir::ast::expression
 		void visit(visitor* vst) override;
 	};
 
-	struct string_literal : literal
+	struct string_literal final : literal
 	{
 		std::string value;
 
@@ -54,9 +55,12 @@ namespace seam::ir::ast::expression
 		void visit(visitor* vst) override;
 	};
 
-	struct number_literal : literal
+	struct number_literal final : literal
 	{
-		std::string value;
+		std::variant<std::string,
+			std::int8_t, std::int16_t, std::int32_t, std::int64_t,
+			std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t,
+			float, double> value;
 
 		explicit number_literal(utils::position_range range, std::string value) :
 			literal(range), value(std::move(value))
@@ -66,7 +70,7 @@ namespace seam::ir::ast::expression
 	};
 
 	struct unresolved_symbol final : expression
-	{		
+	{
 		std::string name;
 
 		explicit unresolved_symbol(const utils::position_range range, std::string variable_name)
@@ -76,12 +80,12 @@ namespace seam::ir::ast::expression
 	};
 
 	struct variable final : expression
-	{		
+	{
 		std::unique_ptr<expression> value;
 
 		explicit variable(const utils::position_range range, std::unique_ptr<expression> expr)
 			: expression(range), value(std::move(expr)) {}
-		
+
 		void visit(visitor* vst) override;
 	};
 

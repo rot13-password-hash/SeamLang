@@ -126,7 +126,7 @@ namespace seam::code_generation
 	        : builder(builder) {}
     	
         llvm::IRBuilder<>& builder;
-        llvm::Value* value;
+        llvm::Value* value = nullptr;
 
         bool visit(ir::ast::expression::call* node) override
         {
@@ -139,12 +139,60 @@ namespace seam::code_generation
             value = llvm::ConstantInt::get(builder.getContext(), llvm::APInt(sizeof(std::uint8_t) * 8, static_cast<std::uint8_t>(node->value)));
             return false;
         }
+
+        bool visit(ir::ast::expression::number_literal* node) override
+        {
+            value = std::visit(
+                [this, node](auto&& value) -> llvm::Value*
+                {
+                    using value_t = std::decay_t<decltype(value)>;
+                    if constexpr (std::is_same_v<value_t, std::int8_t> || std::is_same_v<value_t, std::uint8_t>)
+                    {
+                        return llvm::ConstantInt::get(builder.getContext(), llvm::APInt(sizeof(std::int8_t) * 8,
+                            static_cast<std::uint64_t>(value)));
+                    }
+                    else if constexpr (std::is_same_v<value_t, std::int16_t> || std::is_same_v<value_t, std::uint16_t>)
+                    {
+                        return llvm::ConstantInt::get(builder.getContext(), llvm::APInt(sizeof(std::int16_t) * 8,
+                            static_cast<std::uint64_t>(value)));
+                    }
+                    else if constexpr (std::is_same_v<value_t, std::int32_t> || std::is_same_v<value_t, std::uint32_t>)
+                    {
+                        return llvm::ConstantInt::get(builder.getContext(), llvm::APInt(sizeof(std::int32_t) * 8,
+                            static_cast<std::uint64_t>(value)));
+                    }
+                    else if constexpr (std::is_same_v<value_t, std::int64_t> || std::is_same_v<value_t, std::uint64_t>)
+                    {
+                        return llvm::ConstantInt::get(builder.getContext(), llvm::APInt(sizeof(std::int64_t) * 8,
+                            static_cast<std::uint64_t>(value)));
+                    }
+                    else if constexpr (std::is_same_v<value_t, float>)
+                    {
+                        return llvm::ConstantFP::get(builder.getContext(), llvm::APFloat(value));
+                    }
+                    else if constexpr (std::is_same_v<value_t, double>)
+                    {
+                        return llvm::ConstantFP::get(builder.getContext(), llvm::APFloat(value));
+                    }
+                    else if constexpr (std::is_same_v<value_t, std::string>)
+                    {
+                        throw utils::compiler_exception{ node->range.start,
+                            "internal compiler error: did not expect unparsed number during code gen" };
+                    }
+                    else
+                    {
+                        throw utils::compiler_exception{ node->range.start,
+                            "internal compiler error: unknown number literal type" };
+                    }
+                }, node->value);
+            return false;
+        }
     	
         bool visit(ir::ast::statement::ret* node) override
         {
             if (node->value)
             {
-                node->value->visit(this); // generate return
+                node->value->visit(this);
                 builder.CreateRet(value);
             }
             else

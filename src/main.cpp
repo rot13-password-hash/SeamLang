@@ -12,16 +12,16 @@ int main()
 	const auto module = std::make_shared<seam::types::module>("test_module");
 
 	seam::parser::parser parser(module, "test", R"(
-		type int = i32
+		type int = i64
 		
-		fn test(num: int) -> bool
+		fn test() -> int
 		{
-			return true
+			return 1000000000000
 		}
 
 		fn main() @constructor
 		{
-			test(1)
+			test()
 		}
 	)");
 	
