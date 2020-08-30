@@ -1,4 +1,7 @@
 #define CATCH_CONFIG_MAIN
+#include <memory>
+
+#include "../seam/types/module.hpp"
 #include "../seam/lexer/lexeme.hpp"
 #include "../seam/lexer/lexer.hpp"
 #include "3rdparty/catch2.hpp"
@@ -34,7 +37,9 @@ TEST_CASE("Example lexed source", "[lexer]") {
 		{ seam::lexer::lexeme_type::eof },
 	};
 	
-    seam::lexer::lexer lexer(R"(
+    seam::lexer::lexer lexer(
+		std::make_shared<seam::types::module>("test"),
+	R"(
 		fn test_arrow_method(arg: i32) -> i32
 		{
 			return arg + 1
