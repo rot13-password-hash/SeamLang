@@ -15,6 +15,7 @@ namespace seam::ir::ast
         BASE_VISITOR(node);
 
         VISITOR(node, function_signature);
+		VISITOR(node, expression::number_wrapper);
         VISITOR(node, type_wrapper);
         VISITOR(node, statement::statement);
         VISITOR(node, expression::expression);

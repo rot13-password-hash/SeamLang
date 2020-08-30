@@ -1,13 +1,11 @@
 #pragma once
 
 #include "pass.hpp"
-#include "../../ir/ast/visitor.hpp"
-#include "../../utils/exception.hpp"
+#include "../../ir/ast/statement.hpp"
 
 #include <memory>
 #include <unordered_map>
 #include <string>
-#include <sstream>
 
 namespace seam::parser::passes
 {

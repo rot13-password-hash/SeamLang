@@ -1,10 +1,12 @@
 #pragma once
 
+#include "../ir/ast/statement.hpp"
 #include "../ir/ast/expression.hpp"
 #include "../lexer/lexer.hpp"
 #include "../types/module.hpp"
 
 #include <memory>
+#include <string_view>
 
 namespace seam::parser
 {
@@ -14,6 +16,8 @@ namespace seam::parser
 
 		std::string_view filename_; // name of file currently being parsed.
 		lexer::lexer lexer_; // current lexer instance.
+
+		ir::ast::statement::statement* current_block = nullptr;
 
 		/**
 		 * 
@@ -84,7 +88,7 @@ namespace seam::parser
 		std::unique_ptr<ir::ast::expression::expression> parse_expression();
 
 		std::unique_ptr<ir::ast::statement::ret> parse_return_statement();
-		
+
 		/**
 		 * Parses a block statement.
 		 *

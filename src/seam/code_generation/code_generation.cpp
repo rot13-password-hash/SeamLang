@@ -131,6 +131,23 @@ namespace seam::code_generation
         bool visit(ir::ast::expression::call* node) override
         {
         	// TODO: Handle call expressions in code_gen.
+            node->function->visit(this);
+            if (!llvm::isa<llvm::Function>(value))
+            {
+                throw utils::compiler_exception{ node->range.start, "internal compiler error: expected function for call" };
+            }
+
+            auto func = static_cast<llvm::Function*>(value);
+
+            std::vector<llvm::Value*> arguments;
+
+            for (const auto& arg : node->arguments)
+            {
+                arg->visit(this);
+                arguments.emplace_back(value);
+            }
+            // TODO: More work here...
+            value = builder.CreateCall(func, llvm::makeArrayRef(arguments));
             return false;
         }
     	

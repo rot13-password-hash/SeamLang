@@ -3,16 +3,11 @@
 
 namespace seam::ir::ast::expression
 {
-	void unresolved_symbol::visit(visitor* vst)
-	{
-		vst->visit(this);
-	}
-	
 	void variable::visit(visitor* vst)
 	{
 		if (vst->visit(this))
 		{
-			value->visit(vst);
+			type_->visit(vst);
 		}
 	}
 
@@ -42,4 +37,9 @@ namespace seam::ir::ast::expression
 	{
 		vst->visit(this);
 	}
+
+    void number_wrapper::visit(visitor* vst)
+    {
+		vst->visit(this);
+    }
 }

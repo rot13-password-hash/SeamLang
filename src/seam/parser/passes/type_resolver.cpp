@@ -1,5 +1,9 @@
 #include "type_resolver.hpp"
 #include "../../ir/ast/type.hpp"
+#include "../../utils/exception.hpp"
+#include "../../ir/ast/visitor.hpp"
+
+#include <iostream>
 
 namespace seam::parser::passes
 {
@@ -8,6 +12,13 @@ namespace seam::parser::passes
 	struct resolver : visitor
 	{
 		const type_map& type_map_;
+
+		bool visit(expression::number_wrapper* node) override
+		{
+			const auto unresolved = static_cast<expression::unresolved_number*>(node->value.get());
+			std::cout << unresolved << std::endl;
+			return false;
+		}
 
 		bool visit(type_wrapper* node) override
 		{

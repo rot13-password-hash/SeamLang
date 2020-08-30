@@ -1,6 +1,8 @@
 #include "type_collector.hpp"
+#include "../../utils/exception.hpp"
+#include "../../ir/ast/visitor.hpp"
 
-#include <iostream>
+#include <sstream>
 
 namespace seam::parser::passes
 {
@@ -101,7 +103,7 @@ namespace seam::parser::passes
             return false;
         }
 
-		explicit collector::collector(function_map& function_map_, type_map& type_map_) :
+		explicit collector(function_map& function_map_, type_map& type_map_) :
             function_map_(function_map_),
             type_map_(type_map_)
         {}

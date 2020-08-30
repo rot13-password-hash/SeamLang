@@ -21,6 +21,8 @@ namespace seam::lexer
 		{ "throw", lexeme_type::kw_throw },
 		{ "true", lexeme_type::kw_true },
 		{ "false", lexeme_type::kw_false },
+		{ "while", lexeme_type::kw_while },
+		{ "for", lexeme_type::kw_for },
 	};
 
 	const lexeme_map_t symbol_map

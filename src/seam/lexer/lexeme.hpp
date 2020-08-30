@@ -59,6 +59,8 @@ namespace seam::lexer
 		kw_throw,
 		kw_true,
 		kw_false,
+		kw_while,
+		kw_for,
 	};
 	
 	struct lexeme

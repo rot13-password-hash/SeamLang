@@ -7,6 +7,7 @@
 #include "../types/module.hpp"
 
 #include <memory>
+#include <unordered_map>
 
 namespace seam::code_generation
 {
