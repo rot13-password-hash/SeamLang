@@ -17,6 +17,7 @@ namespace seam::ir::ast::statement
 	{
 		if (vst->visit(this))
 		{
+			signature->visit(vst);
 			body->visit(vst);
 		}
 	}
@@ -57,10 +58,7 @@ namespace seam::ir::ast::statement
 
 	void alias_type_definition::visit(visitor* vst)
 	{
-		if (vst->visit(this))
-		{
-			target_type->visit(vst);
-		}
+		vst->visit(this);
 	}
 
 	void class_type_definition::visit(visitor* vst)

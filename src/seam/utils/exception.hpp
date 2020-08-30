@@ -33,4 +33,13 @@ namespace seam::utils
 		explicit parser_exception(utils::position position, const std::string& msg) :
 			exception(position, msg) {}
 	};
+
+	/**
+	 * Seam compiler exception class
+	 */
+	struct compiler_exception final : exception
+	{
+		explicit compiler_exception(utils::position position, const std::string& msg) :
+			exception(position, msg) {}
+	};
 }

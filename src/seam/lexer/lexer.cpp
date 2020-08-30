@@ -39,6 +39,7 @@ namespace seam::lexer
 		{ "}", lexeme_type::symbol_close_brace },
 		{ "->", lexeme_type::symbol_arrow },
 		{ "=", lexeme_type::symbol_equals },
+		{ "!", lexeme_type::symbol_not },
 		{ "?", lexeme_type::symbol_question_mark },
 		{ ":", lexeme_type::symbol_colon },
 		{ ":=", lexeme_type::symbol_colon_equals },

@@ -37,7 +37,7 @@ namespace seam::parser
 		 *
 		 * @returns a type.
 		 */
-		std::unique_ptr<ir::ast::unresolved_type> parse_type();
+		std::unique_ptr<ir::ast::type_wrapper> parse_type();
 
 		/**
 		 * Parses a parameter.
@@ -100,7 +100,7 @@ namespace seam::parser
 		 *
 		 * @returns a unique pointer to a function definition ast node when successful, otherwise throws an exception.
 		 */
-		std::shared_ptr<types::function_signature> parse_function_signature();
+		std::shared_ptr<ir::ast::function_signature> parse_function_signature();
 
 		/**
 		 * Parses a function definition statement.

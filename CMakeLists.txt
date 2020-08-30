@@ -22,12 +22,13 @@ add_executable(compiler
 	src/seam/parser/parser.cpp
 	src/seam/ir/ast/statement.cpp
 	src/seam/ir/ast/expression.cpp 
-	src/seam/types/function_signature.hpp
+	
 	src/seam/ir/ast/type.cpp 
 	src/seam/code_generation/code_generation.cpp
 	src/seam/parser/passes/pass.cpp
-	src/seam/parser/passes/symbol_collector.cpp
-	src/seam/parser/passes/function_dependency.cpp)
+	src/seam/parser/passes/type_collector.cpp
+	src/seam/parser/passes/function_dependency.cpp
+	src/seam/parser/passes/type_resolver.cpp)
 
 # Find the libraries that correspond to the LLVM components
 # that we wish to use

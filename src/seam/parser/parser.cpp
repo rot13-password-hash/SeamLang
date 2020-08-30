@@ -23,7 +23,7 @@ namespace seam::parser
 		}
 	}
 
-	std::unique_ptr<ir::ast::unresolved_type> parser::parse_type()
+	std::unique_ptr<ir::ast::type_wrapper> parser::parse_type()
 	{
 		const auto start_position = lexer_.current_lexeme().position;
 		expect(lexer::lexeme_type::identifier);
@@ -31,22 +31,15 @@ namespace seam::parser
 		auto target_type_name = std::string{ lexer_.current_lexeme().value };
 		lexer_.next_lexeme();
 
-		if (lexer_.current_lexeme().type == lexer::lexeme_type::symbol_question_mark)
-		{
+		bool is_optional = false;
+		if (lexer_.current_lexeme().type == lexer::lexeme_type::symbol_question_mark) 
+		{		
 			lexer_.next_lexeme();
-
-			return std::make_unique<ir::ast::unresolved_type>(
-				utils::position_range{ start_position, lexer_.current_lexeme().position },
-				std::move(target_type_name),
-				true
-			);
+			is_optional = true;
 		}
 
-		return std::make_unique<ir::ast::unresolved_type>(
-			utils::position_range{ start_position, lexer_.current_lexeme().position },
-			std::move(target_type_name),
-			false
-		);
+		return std::make_unique<ir::ast::type_wrapper>(utils::position_range{start_position, lexer_.current_lexeme().position},
+			std::make_shared<ir::ast::unresolved_type>(std::move(target_type_name), is_optional));
 	}
 
 	ir::ast::parameter parser::parse_parameter()
@@ -261,14 +254,16 @@ namespace seam::parser
 						lexer_.next_lexeme();
 						const auto is_auto = var_lexeme.type == lexer::lexeme_type::symbol_colon_equals;
 						
-						std::unique_ptr<ir::ast::unresolved_type> type;
+						std::unique_ptr<ir::ast::type_wrapper> type;
 						if (!is_auto)
 						{
 							type = parse_type();
 						}
 						else
 						{
-							type = std::make_unique<ir::ast::unresolved_type>(true);
+							type = std::make_unique<ir::ast::type_wrapper>(
+								utils::position_range{ statement_start_position, lexer_.current_lexeme().position },
+								std::make_shared<ir::ast::unresolved_type>(true));
 						}
 
 						// Declare + Assign
@@ -301,7 +296,6 @@ namespace seam::parser
 							reinterpret_cast<ir::ast::expression::unresolved_symbol*>(var_expr->value.get())->name, // TODO: SO UGLY :PEPEHANDS:
 							std::move(expr)));
 					}
-					// TODO: Finish all this.
 					break;
 				}
 			}
@@ -312,7 +306,7 @@ namespace seam::parser
 		return std::make_unique<ir::ast::statement::block>(utils::position_range{ start_position, lexer_.current_lexeme().position }, std::move(body));
 	}
 
-	std::shared_ptr<types::function_signature> parser::parse_function_signature()
+	std::shared_ptr<ir::ast::function_signature> parser::parse_function_signature()
 	{
 		const auto start_position = lexer_.current_lexeme().position;
 
@@ -336,7 +330,7 @@ namespace seam::parser
 		expect(lexer::lexeme_type::symbol_close_parenthesis, true);
 
 		// Check for explicit return type
-		std::unique_ptr<ir::ast::unresolved_type> return_type;
+		std::unique_ptr<ir::ast::type_wrapper> return_type;
 		if (lexer_.current_lexeme().type == lexer::lexeme_type::symbol_arrow)
 		{
 			lexer_.next_lexeme();
@@ -347,9 +341,9 @@ namespace seam::parser
 			// We do not allow for any implicit returns which
 			// are not void, so we can simply set the return
 			// type to void.
-			return_type = std::make_unique<ir::ast::unresolved_type>(utils::position_range{ start_position, lexer_.current_lexeme().position },
-				"void",
-				false);
+			return_type = std::make_unique<ir::ast::type_wrapper>(
+				utils::position_range{ start_position, lexer_.current_lexeme().position },
+				std::make_shared<ir::ast::unresolved_type>("void", false));
 		}
 
 		// Check for attributes
@@ -367,8 +361,8 @@ namespace seam::parser
 			lexer_.next_lexeme();
 		}
 
-		return std::make_shared<types::function_signature>(current_module->name, std::move(function_name), std::move(return_type),
-			std::move(param_list), std::move(attribute_list));
+		return std::make_shared<ir::ast::function_signature>(current_module->name, std::move(function_name), std::move(return_type),
+		                                                     std::move(param_list), std::move(attribute_list));
 	}
 
 	std::unique_ptr<ir::ast::statement::function_definition> parser::parse_function_definition_statement()

@@ -12,17 +12,16 @@ int main()
 	const auto module = std::make_shared<seam::types::module>("test_module");
 
 	seam::parser::parser parser(module, "test", R"(
-		fn recursive_fib(n: i32) -> bool
+		type int = i32
+		
+		fn test(num: int) -> bool
 		{
-		    return false
+			return true
 		}
 
-		fn entry() @constructor
+		fn main() @constructor
 		{
-		    a: bool = recursive_fib(5)
-			b := 2
-			b = 3
-			a = true
+			test(1)
 		}
 	)");
 	

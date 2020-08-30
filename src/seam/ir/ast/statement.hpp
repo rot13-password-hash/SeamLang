@@ -7,8 +7,8 @@
 #include <vector>
 
 #include "node.hpp"
-#include "../../types/function_signature.hpp"
 #include "expression.hpp"
+#include "type.hpp"
 
 namespace seam::ir::ast::statement
 {	
@@ -65,12 +65,12 @@ namespace seam::ir::ast::statement
 	struct variable_declaration final : statement
 	{
 		std::string name;
-		std::unique_ptr<type> type;
+		std::unique_ptr<type_wrapper> type;
 		std::unique_ptr<expression::expression> value;
 
 		void visit(visitor* vst) override;
 
-		explicit variable_declaration(const utils::position_range range, std::string var_name, std::unique_ptr<unresolved_type> type, std::unique_ptr<expression::expression> value) :
+		explicit variable_declaration(const utils::position_range range, std::string var_name, std::unique_ptr<type_wrapper> type, std::unique_ptr<expression::expression> value) :
 			statement(range), name(var_name), type(std::move(type)), value(std::move(value)) {}
 	};
 
@@ -87,13 +87,13 @@ namespace seam::ir::ast::statement
 	
 	struct function_definition final : restricted
 	{
-		std::shared_ptr<types::function_signature> signature;
+		std::shared_ptr<function_signature> signature;
 		std::unique_ptr<block> body;
-		std::unordered_set<std::shared_ptr<types::function_signature>> function_dependencies;
+		std::unordered_set<std::shared_ptr<function_signature>> function_dependencies;
 
 		void visit(visitor* vst) override;
 
-		explicit function_definition(const utils::position_range range, std::shared_ptr<types::function_signature> signature, std::unique_ptr<block> body) :
+		explicit function_definition(const utils::position_range range, std::shared_ptr<function_signature> signature, std::unique_ptr<block> body) :
 			restricted(range), signature(signature), body(std::move(body)) {}
 	
 	};
@@ -106,11 +106,11 @@ namespace seam::ir::ast::statement
 	struct alias_type_definition final : type_definition
 	{
 		std::string name;
-		std::unique_ptr<unresolved_type> target_type;
+		std::unique_ptr<type_wrapper> target_type;
 
 		void visit(visitor* vst) override;
 
-		explicit alias_type_definition(const utils::position_range range, std::string name, std::unique_ptr<unresolved_type> target_type) :
+		explicit alias_type_definition(const utils::position_range range, std::string name, std::unique_ptr<type_wrapper> target_type) :
 			type_definition(range), name(std::move(name)), target_type(std::move(target_type)) {}
 	};
 
