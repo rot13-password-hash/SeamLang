@@ -21,22 +21,6 @@ namespace seam::ir::ast::statement
 		}
 	}
 	
-	void alias_type_definition::visit(visitor* vst)
-	{
-		if (vst->visit(this))
-		{
-			target_type->visit(vst);
-		}
-	}
-	
-	void class_type_definition::visit(visitor* vst)
-	{
-		if (vst->visit(this))
-		{
-			body->visit(vst);
-		}
-	}
-	
 	void block::visit(visitor* vst)
 	{
 		if (vst->visit(this))
@@ -53,6 +37,37 @@ namespace seam::ir::ast::statement
 		if (vst->visit(this))
 		{
 			value->visit(vst);
+		}
+	}
+	void variable_declaration::visit(visitor* vst)
+	{
+		if (vst->visit(this))
+		{
+			value->visit(vst);
+		}
+	}
+
+	void variable_assignment::visit(visitor* vst)
+	{
+		if (vst->visit(this))
+		{
+			value->visit(vst);
+		}
+	}
+
+	void alias_type_definition::visit(visitor* vst)
+	{
+		if (vst->visit(this))
+		{
+			target_type->visit(vst);
+		}
+	}
+
+	void class_type_definition::visit(visitor* vst)
+	{
+		if (vst->visit(this))
+		{
+			body->visit(vst);
 		}
 	}
 }

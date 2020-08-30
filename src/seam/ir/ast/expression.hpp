@@ -54,6 +54,17 @@ namespace seam::ir::ast::expression
 		void visit(visitor* vst) override;
 	};
 
+	struct number_literal : literal
+	{
+		std::string value;
+
+		explicit number_literal(utils::position_range range, std::string value) :
+			literal(range), value(std::move(value))
+		{}
+
+		void visit(visitor* vst) override;
+	};
+
 	struct unresolved_symbol final : expression
 	{		
 		std::string name;

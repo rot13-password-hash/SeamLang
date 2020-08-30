@@ -156,53 +156,54 @@ namespace seam::parser
 		const auto current_lexeme = lexer_.current_lexeme();
 		switch (const auto lexeme_type = current_lexeme.type)
 		{
-		case lexer::lexeme_type::kw_true:
-		case lexer::lexeme_type::kw_false:
-		{
-			lexer_.next_lexeme(); // Consume lexeme.
-			return std::make_unique<ir::ast::expression::bool_literal>(utils::position_range{ start_position, current_lexeme.position }, lexeme_type != lexer::lexeme_type::kw_false);
-		}
-		case lexer::lexeme_type::literal_number:
-		{
-			lexer_.next_lexeme();
-			return std::make_unique<ir::ast::expression::string_literal>(utils::position_range{ start_position, current_lexeme.position }, std::string{ current_lexeme.value });
-		}
-		case lexer::lexeme_type::literal_string:
-		{
-			lexer_.next_lexeme();
-			return std::make_unique<ir::ast::expression::string_literal>(utils::position_range{ start_position, current_lexeme.position }, std::string{ current_lexeme.value });
-		}
-		case lexer::lexeme_type::symbol_open_parenthesis: // (expr)
-		case lexer::lexeme_type::identifier: // variable, function_name(<args>)
-		{
-			auto prefix_expression = parse_prefix_expression();
-
-			auto expression = std::move(prefix_expression);
-			while (lexer_.current_lexeme().position.line == start_position.line)
+			case lexer::lexeme_type::kw_true:
+			case lexer::lexeme_type::kw_false:
 			{
-				switch (lexer_.current_lexeme().type)
-				{
-				case lexer::lexeme_type::symbol_open_parenthesis:
-				{
-					expression = parse_call_expression(std::move(expression));
-					continue;
-				}
-				default:
-				{
-					std::stringstream error_message;
-					error_message << "expected function call or index, got " << current_lexeme.to_string();
-					throw utils::parser_exception{ lexer_.current_lexeme().position, error_message.str() };
-				}
-				}
+				lexer_.next_lexeme(); // Consume lexeme.
+				return std::make_unique<ir::ast::expression::bool_literal>(utils::position_range{ start_position, current_lexeme.position }, lexeme_type != lexer::lexeme_type::kw_false);
 			}
-			return expression;
-		}
-		default:
-		{
-			std::stringstream error_message;
-			error_message << "expected expression, got " << current_lexeme.to_string();
-			throw utils::parser_exception{ start_position, error_message.str() };
-		}
+			case lexer::lexeme_type::literal_number:
+			{
+				lexer_.next_lexeme();
+				return std::make_unique<ir::ast::expression::number_literal>(utils::position_range{ start_position, current_lexeme.position }, std::string{ current_lexeme.value });
+			}
+			case lexer::lexeme_type::literal_string:
+			{
+				lexer_.next_lexeme();
+				return std::make_unique<ir::ast::expression::string_literal>(utils::position_range{ start_position, current_lexeme.position }, std::string{ current_lexeme.value });
+			}
+			case lexer::lexeme_type::symbol_open_parenthesis: // (expr)
+			case lexer::lexeme_type::identifier: // variable, function_name(<args>)
+			{
+				auto prefix_expression = parse_prefix_expression();
+
+				auto expression = std::move(prefix_expression);
+				while (lexer_.current_lexeme().position.line == start_position.line)
+				{
+					switch (lexer_.current_lexeme().type)
+					{
+						case lexer::lexeme_type::symbol_open_parenthesis:
+						{
+							expression = parse_call_expression(std::move(expression));
+							continue;
+						}
+						/*default:
+						{
+							std::stringstream error_message;
+							error_message << "expected function call or index, got " << current_lexeme.to_string();
+							throw utils::parser_exception{ lexer_.current_lexeme().position, error_message.str() };
+						}*/
+					}
+					break;
+				}
+				return expression;
+			}
+			default:
+			{
+				std::stringstream error_message;
+				error_message << "expected expression, got " << current_lexeme.to_string();
+				throw utils::parser_exception{ start_position, error_message.str() };
+			}
 		}
 	}
 
@@ -230,7 +231,7 @@ namespace seam::parser
 		ir::ast::statement::statement_list body;
 		while (true)
 		{
-			const auto& current_lexeme = lexer_.current_lexeme();
+			const auto current_lexeme = lexer_.current_lexeme();
 			const auto statement_start_position = current_lexeme.position;
 
 			if (current_lexeme.type == lexer::lexeme_type::symbol_close_brace)
@@ -241,17 +242,68 @@ namespace seam::parser
 			// TODO: Finish block body parsing
 			switch (current_lexeme.type)
 			{
-			case lexer::lexeme_type::kw_return:
-			{
-				body.emplace_back(parse_return_statement());
-				break;
-			}
-			default:
-			{
-				auto expression = parse_expression();
-				// TODO: Finish all this.
-				break;
-			}
+				case lexer::lexeme_type::kw_return:
+				{
+					body.emplace_back(parse_return_statement());
+					break;
+				}
+				default:
+				{
+					auto expression = parse_expression();
+					const auto var_lexeme = lexer_.current_lexeme();
+						
+					// Variable declaration
+					ir::ast::expression::variable* var_expr;
+					if ((var_lexeme.type == lexer::lexeme_type::symbol_colon
+						|| var_lexeme.type == lexer::lexeme_type::symbol_colon_equals)
+						&& ((var_expr = dynamic_cast<ir::ast::expression::variable*>(expression.get())))) // this is _really_ fucking bad
+					{
+						lexer_.next_lexeme();
+						const auto is_auto = var_lexeme.type == lexer::lexeme_type::symbol_colon_equals;
+						
+						std::unique_ptr<ir::ast::unresolved_type> type;
+						if (!is_auto)
+						{
+							type = parse_type();
+						}
+						else
+						{
+							type = std::make_unique<ir::ast::unresolved_type>(true);
+						}
+
+						// Declare + Assign
+						std::unique_ptr<ir::ast::expression::expression> expr = nullptr;
+						if (lexer_.current_lexeme().type == lexer::lexeme_type::symbol_equals
+							|| is_auto)
+						{
+							if (!is_auto)
+								lexer_.next_lexeme();
+							
+							expr = parse_expression();
+						}
+
+						body.push_back(std::make_unique<ir::ast::statement::variable_declaration>(
+							utils::position_range { statement_start_position, lexer_.current_lexeme().position },
+							reinterpret_cast<ir::ast::expression::unresolved_symbol*>(var_expr->value.get())->name, // TODO: SO UGLY :PEPEHANDS:
+							std::move(type),
+							std::move(expr)));
+						continue;
+					}
+
+					// Variable assignment
+					if (var_lexeme.type == lexer::lexeme_type::symbol_equals
+						&& ((var_expr = dynamic_cast<ir::ast::expression::variable*>(expression.get()))))
+					{
+						lexer_.next_lexeme();
+						auto expr = parse_expression();
+						body.push_back(std::make_unique<ir::ast::statement::variable_assignment>(
+							utils::position_range{ statement_start_position, lexer_.current_lexeme().position },
+							reinterpret_cast<ir::ast::expression::unresolved_symbol*>(var_expr->value.get())->name, // TODO: SO UGLY :PEPEHANDS:
+							std::move(expr)));
+					}
+					// TODO: Finish all this.
+					break;
+				}
 			}
 		}
 
@@ -363,7 +415,7 @@ namespace seam::parser
 			ir::ast::statement::restricted_list body;
 			while (lexer_.current_lexeme().type != lexer::lexeme_type::symbol_close_brace) // }
 			{
-				const auto& current_lexeme = lexer_.current_lexeme();
+				const auto current_lexeme = lexer_.current_lexeme();
 				if (current_lexeme.type == lexer::lexeme_type::identifier) // <identifier> : <type>
 				{
 					// <identifier>
@@ -403,7 +455,7 @@ namespace seam::parser
 
 	std::unique_ptr<ir::ast::statement::restricted> parser::parse_restricted_statement()
 	{
-		const auto& current_lexeme = lexer_.current_lexeme();
+		const auto current_lexeme = lexer_.current_lexeme();
 
 		switch (current_lexeme.type)
 		{
@@ -431,7 +483,7 @@ namespace seam::parser
 		ir::ast::statement::restricted_list body;
 		while (true)
 		{
-			const auto& current_lexeme = lexer_.current_lexeme();
+			const auto current_lexeme = lexer_.current_lexeme();
 
 			// Check whether we have any more lexemes to parse...
 			//

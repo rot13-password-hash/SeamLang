@@ -42,11 +42,13 @@ namespace seam::parser::passes
 		bool visit(statement::alias_type_definition* node) override
 		{
 			register_type(node->range, node->name);
+			return false;
 		}
 
 		bool visit(statement::class_type_definition* node) override
 		{
 			register_type(node->range, node->name);
+			return false; // types
 		}
 
 		explicit collector(function_map& function_map_, type_map& type_map_) :

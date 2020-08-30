@@ -16,12 +16,18 @@ namespace seam::ir::ast
 
         VISITOR(node, unresolved_type);
         VISITOR(node, statement::statement);
-
+        VISITOR(node, expression::expression);
+    	
 		VISITOR(statement::statement, statement::function_definition); 
         VISITOR(statement::statement, statement::class_type_definition);
         VISITOR(statement::statement, statement::alias_type_definition);
         VISITOR(statement::statement, statement::restricted);
         VISITOR(statement::statement, statement::restricted_block);
+        VISITOR(statement::statement, statement::block);
+        VISITOR(statement::statement, statement::ret);
+
+        VISITOR(expression::expression, expression::call);
+        VISITOR(expression::expression, expression::bool_literal);
     };
 }
 

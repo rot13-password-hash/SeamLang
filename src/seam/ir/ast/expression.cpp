@@ -3,16 +3,6 @@
 
 namespace seam::ir::ast::expression
 {
-	void bool_literal::visit(visitor* vst)
-	{
-		vst->visit(this);
-	}
-
-	void string_literal::visit(visitor* vst)
-	{
-		vst->visit(this);
-	}
-
 	void unresolved_symbol::visit(visitor* vst)
 	{
 		vst->visit(this);
@@ -36,5 +26,20 @@ namespace seam::ir::ast::expression
 				argument->visit(vst);
 			}
 		}
+	}
+
+	void bool_literal::visit(visitor* vst)
+	{
+		vst->visit(this);
+	}
+
+	void string_literal::visit(visitor* vst)
+	{
+		vst->visit(this);
+	}
+	
+	void number_literal::visit(visitor* vst)
+	{
+		vst->visit(this);
 	}
 }

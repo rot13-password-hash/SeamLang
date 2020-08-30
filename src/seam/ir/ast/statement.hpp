@@ -62,6 +62,29 @@ namespace seam::ir::ast::statement
 			statement(range), value(std::move(return_value)) {}
 	};
 
+	struct variable_declaration final : statement
+	{
+		std::string name;
+		std::unique_ptr<type> type;
+		std::unique_ptr<expression::expression> value;
+
+		void visit(visitor* vst) override;
+
+		explicit variable_declaration(const utils::position_range range, std::string var_name, std::unique_ptr<unresolved_type> type, std::unique_ptr<expression::expression> value) :
+			statement(range), name(var_name), type(std::move(type)), value(std::move(value)) {}
+	};
+
+	struct variable_assignment final : statement
+	{
+		std::string name;
+		std::unique_ptr<expression::expression> value;
+
+		void visit(visitor* vst) override;
+
+		explicit variable_assignment(const utils::position_range range, std::string var_name, std::unique_ptr<expression::expression> value) :
+			statement(range), name(var_name), value(std::move(value)) {}
+	};
+	
 	struct function_definition final : restricted
 	{
 		std::shared_ptr<types::function_signature> signature;

@@ -12,16 +12,27 @@ int main()
 	const auto module = std::make_shared<seam::types::module>("test_module");
 
 	seam::parser::parser parser(module, "test", R"(
-type a = i32
-type a = i32
+		fn recursive_fib(n: i32) -> bool
+		{
+		    return false
+		}
+
+		fn entry() @constructor
+		{
+		    a: bool = recursive_fib(5)
+			b := 2
+			b = 3
+			a = true
+		}
 	)");
 	
 	try
 	{
 		module->body = parser.parse();
 
-		//seam::code_generation::code_generation code_gen{ module.get() };
-		//code_gen.generate();
+		seam::code_generation::code_generation code_gen{ module.get() };
+		auto module = code_gen.generate();
+		module->print(llvm::outs(), nullptr);
 	}
 	catch (const seam::utils::exception& ex)
 	{

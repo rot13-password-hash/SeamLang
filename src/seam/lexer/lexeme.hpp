@@ -33,7 +33,7 @@ namespace seam::lexer
 		symbol_open_brace,
 		symbol_close_brace,
 		symbol_arrow,
-		symbol_assign,
+		symbol_equals,
 		symbol_question_mark,
 		symbol_colon,
 		symbol_colon_equals,
@@ -95,7 +95,7 @@ namespace seam::lexer
 				case lexeme_type::symbol_open_brace: return "{";
 				case lexeme_type::symbol_close_brace: return "}";
 				case lexeme_type::symbol_arrow: return "->";
-				case lexeme_type::symbol_assign: return "=";
+				case lexeme_type::symbol_equals: return "=";
 				case lexeme_type::symbol_question_mark: return "?";
 				case lexeme_type::symbol_colon: return ":";
 				case lexeme_type::symbol_colon_equals: return ":=";

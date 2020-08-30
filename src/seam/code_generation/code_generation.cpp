@@ -20,10 +20,25 @@ namespace seam::code_generation
 
     struct code_gen_visitor : ir::ast::visitor
     {
+	    explicit code_gen_visitor(llvm::IRBuilder<>& builder)
+	        : builder(builder) {}
+    	
         llvm::IRBuilder<>& builder;
         llvm::Value* value;
 
-        bool visit(ir::ast::statement::ret* node)
+        bool visit(ir::ast::expression::call* node)
+        {
+        	// TODO: Handle call expressions in code_gen.
+            return false;
+        }
+    	
+        bool visit(ir::ast::expression::bool_literal* node)
+        {
+            value = llvm::ConstantInt::get(builder.getContext(), llvm::APInt(sizeof(std::uint8_t) * 8, static_cast<std::uint8_t>(node->value)));
+            return false;
+        }
+    	
+        bool visit(ir::ast::statement::ret* node) override
         {
             if (node->value)
             {
@@ -37,7 +52,7 @@ namespace seam::code_generation
             return false;
         }
 
-        bool visit(ir::ast::statement::block* node)
+        bool visit(ir::ast::statement::block* node) override
         {
 			return true;
         }
@@ -57,7 +72,7 @@ namespace seam::code_generation
 
         llvm::Function* llvm_func = llvm::Function::Create(func_type, llvm::GlobalValue::InternalLinkage, 
             func->signature->mangled_name, *llvm_module);
-        llvm::BasicBlock* basic_block = llvm::BasicBlock::Create(context_, func->signature->mangled_name,
+        llvm::BasicBlock* basic_block = llvm::BasicBlock::Create(context_, "entry",
             llvm_func);
         llvm::IRBuilder<> builder(basic_block);
 
@@ -83,14 +98,14 @@ namespace seam::code_generation
         }
 
         
-        llvm::Function* entry_function = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(context_), false),
+        auto* entry_function = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(context_), false),
             llvm::GlobalValue::InternalLinkage,
             "entry", 
             *llvm_module);
-        llvm::BasicBlock* entry_basic_block = llvm::BasicBlock::Create(context_, "entry", entry_function);
+		auto* entry_basic_block = llvm::BasicBlock::Create(context_, "entry", entry_function);
         llvm::IRBuilder<> entry_builder(entry_basic_block);
 
-        for (const auto constructor_func : constructor_functions)
+        for (const auto& constructor_func : constructor_functions)
         {
             entry_builder.CreateCall(constructor_func);
         }

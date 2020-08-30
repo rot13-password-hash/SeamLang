@@ -24,6 +24,7 @@ add_executable(compiler
 	src/seam/ir/ast/expression.cpp 
 	src/seam/types/function_signature.hpp
 	src/seam/ir/ast/type.cpp 
+	src/seam/code_generation/code_generation.cpp
 	src/seam/parser/passes/pass.cpp
 	src/seam/parser/passes/symbol_collector.cpp
 	src/seam/parser/passes/function_dependency.cpp)
