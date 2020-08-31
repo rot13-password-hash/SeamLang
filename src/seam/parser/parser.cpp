@@ -248,7 +248,9 @@ namespace seam::parser
 		case lexer::lexeme_type::literal_number:
 		{
 			lexer_.next_lexeme();
-			expr = std::make_unique<ir::ast::expression::number_literal>(utils::position_range{ start_position, current_lexeme.position }, std::string{ current_lexeme.value });
+			// TODO: number_wrapper
+			expr = std::make_unique<ir::ast::expression::number_wrapper>(utils::position_range{ start_position, current_lexeme.position },
+				std::make_unique<ir::ast::expression::unresolved_number>(std::string{ current_lexeme.value }));
 			break;
 		}
 		case lexer::lexeme_type::literal_string:
@@ -322,7 +324,7 @@ namespace seam::parser
 		lexer_.next_lexeme(); // collect kw_while
 
 		expect(lexer::lexeme_type::symbol_open_parenthesis, true);
-		auto condition = parse_primary_expression();
+		auto condition = parse_expression();
 		expect(lexer::lexeme_type::symbol_close_parenthesis, true);
 
 		auto body = parse_block_statement();
@@ -339,7 +341,7 @@ namespace seam::parser
 		lexer_.next_lexeme(); // collect kw_if
 
 		expect(lexer::lexeme_type::symbol_open_parenthesis, true);
-		auto condition = parse_primary_expression();
+		auto condition = parse_expression();
 		expect(lexer::lexeme_type::symbol_close_parenthesis, true);
 
 		auto main_body = parse_block_statement();
@@ -365,10 +367,10 @@ namespace seam::parser
 				}
 				case lexer::lexeme_type::kw_elseif:
 				{
-					// Check whether an else block exists, and create
-					// an if inside it.
-					//
-					
+					throw utils::parser_exception{
+						lexer_.current_lexeme().position,
+						"TODO: Check whether an else block exists, and create an if inside of it.",
+					};
 					break;
 				}
 				default:
@@ -432,9 +434,9 @@ namespace seam::parser
 			}
 			default:
 			{
-				auto expression = parse_primary_expression();
-				
-
+				// TODO: use parse_primary_expression if we only want to allow call + index
+				auto expression = parse_expression();
+				body.push_back(std::make_unique<ir::ast::statement::expression_>(expression->range, std::move(expression)));
 				break;
 			}
 			}

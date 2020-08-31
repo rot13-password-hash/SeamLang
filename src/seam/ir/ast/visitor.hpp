@@ -26,13 +26,17 @@ namespace seam::ir::ast
         VISITOR(statement::statement, statement::restricted);
         VISITOR(statement::statement, statement::restricted_block);
         VISITOR(statement::statement, statement::block);
+        VISITOR(statement::statement, statement::expression_);
         VISITOR(statement::statement, statement::ret);
         VISITOR(statement::statement, statement::while_loop);
         VISITOR(statement::statement, statement::if_stat);
+        VISITOR(statement::statement, statement::variable_declaration);
+        VISITOR(statement::statement, statement::variable_assignment);
 
         VISITOR(expression::expression, expression::symbol_wrapper);
         VISITOR(expression::expression, expression::call);
         VISITOR(expression::expression, expression::bool_literal);
+        VISITOR(expression::expression, expression::string_literal);
         VISITOR(expression::expression, expression::binary);
     };
 }

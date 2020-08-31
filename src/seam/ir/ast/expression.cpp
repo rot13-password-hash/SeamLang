@@ -50,11 +50,6 @@ namespace seam::ir::ast::expression
 	{
 		vst->visit(this);
 	}
-	
-	void number_literal::visit(visitor* vst)
-	{
-		vst->visit(this);
-	}
 
     void number_wrapper::visit(visitor* vst)
     {

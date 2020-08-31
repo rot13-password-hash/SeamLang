@@ -58,6 +58,16 @@ namespace seam::ir::ast::statement
 			: statement(range), body(std::move(body)) {}
 	};
 
+	struct expression_ final : statement
+	{
+		std::unique_ptr<expression::expression> value;
+
+		void visit(visitor* vst) override;
+
+		explicit expression_(utils::position_range range, std::unique_ptr<expression::expression> value) :
+			statement(range), value(std::move(value)) {}
+	};
+
 	struct ret final : statement
 	{
 		std::unique_ptr<expression::expression> value;
