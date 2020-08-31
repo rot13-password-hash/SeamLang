@@ -66,7 +66,7 @@ namespace seam::ir::ast::expression
 	{
 		std::string name;
 		std::shared_ptr<type_wrapper> type_;
-
+		
 		void visit(visitor* vst) override;
 
 		variable(utils::position_range range, std::string name) :

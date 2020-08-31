@@ -12,20 +12,23 @@ int main()
 	const auto module = std::make_shared<seam::types::module>("test_module");
 
 	seam::parser::parser parser(module, "test", R"(
-		fn test() -> bool
+		fn test(a: i32) -> bool
 		{
 			return true
 		}
+
+		fn testa(a: i32) -> i32
+		{
+			return 20
+		}
+
 		fn main() @constructor
 		{
-			while (true)
-			{
-				test()
-			}
+			testa(b)
 		}
 	)");
 	
-	//try
+	try
 	{
 		module->body = parser.parse();
 
@@ -33,7 +36,7 @@ int main()
 		auto module = code_gen.generate();
 		module->print(llvm::outs(), nullptr);
 	}
-	/*catch (const seam::utils::exception& ex)
+	catch (const seam::utils::exception& ex)
 	{
 		llvm::errs() << ex.position.line << ':' << ex.position.column << ": ";
 		llvm::WithColor::error() << ex.what() << '\n';
@@ -42,5 +45,5 @@ int main()
 	{
 		llvm::WithColor::error();
 		llvm::errs() << ex.what() << '\n';
-	}*/
+	}
 }

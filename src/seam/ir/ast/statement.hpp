@@ -46,7 +46,7 @@ namespace seam::ir::ast::statement
 	struct block final : statement
 	{
 		statement_list body;
-		statement* parent;
+		block* parent;
 		std::unordered_map<std::string, std::shared_ptr<expression::variable>> variables;
 		
 		void visit(visitor* vst) override;

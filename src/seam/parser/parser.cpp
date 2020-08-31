@@ -133,8 +133,6 @@ namespace seam::parser
 			auto identifier_name = std::string{ current_lexeme.value };
 			lexer_.next_lexeme();
 
-			
-				
 			return std::make_unique<ir::ast::expression::symbol_wrapper>(utils::position_range{ start_position, lexer_.current_lexeme().position },
 				std::make_unique<ir::ast::expression::unresolved_symbol>(std::move(identifier_name)));
 		}
@@ -280,6 +278,21 @@ namespace seam::parser
 		return expr;
 	}
 
+	std::shared_ptr<ir::ast::expression::variable> get_variable_from_block(ir::ast::statement::block* block, std::string variable_name)
+	{
+		auto it = block->variables.find(variable_name);
+		if (it != block->variables.cend())
+		{
+			return it->second;
+		}
+
+		if (block->parent)
+		{
+			return get_variable_from_block(block->parent, variable_name);
+		}
+		return nullptr;
+	}
+
 	std::unique_ptr<ir::ast::expression::expression> parser::parse_primary_expression()
 	{
 		const auto start_position = lexer_.current_lexeme().position;
@@ -291,15 +304,15 @@ namespace seam::parser
 		{
 			switch (lexer_.current_lexeme().type)
 			{
-			case lexer::lexeme_type::symbol_open_parenthesis:
-			{
-				expression = parse_call_expression(std::move(expression));
-				continue;
-			}
+				case lexer::lexeme_type::symbol_open_parenthesis:
+				{
+					expression = parse_call_expression(std::move(expression));
+					continue;
+				}
 			}
 			break;
 		}
-
+		
 		return expression;
 	}
 
@@ -388,7 +401,75 @@ namespace seam::parser
 			std::move(else_block)
 			);
 	}
+	
+	std::unique_ptr<ir::ast::statement::statement> parser::parse_assignment_statement()
+	{
+		auto variable_name = std::string{ lexer_.current_lexeme().value };
+		lexer_.next_lexeme();
+		
+		const auto assignment_symbol = lexer_.current_lexeme();
+		lexer_.next_lexeme();		
 
+		auto existing_var = get_variable_from_block(current_block, variable_name);
+		switch (assignment_symbol.type)
+		{
+			case lexer::lexeme_type::symbol_colon:
+			case lexer::lexeme_type::symbol_colon_equals:
+			{
+				if (existing_var)
+				{
+					std::stringstream error_message;
+					error_message << "cannot redefine variable " << variable_name;
+					
+					throw utils::compiler_exception{
+						lexer_.current_lexeme().position,
+						error_message.str()
+					};
+				}
+
+				std::unique_ptr<ir::ast::type_wrapper> var_type;
+				if (assignment_symbol.type == lexer::lexeme_type::symbol_colon)
+				{
+					var_type = parse_type();
+				}
+				else
+				{
+					var_type = std::make_unique<ir::ast::type_wrapper>(utils::position_range{ assignment_symbol.position, lexer_.current_lexeme().position },
+						std::make_shared<ir::ast::unresolved_type>("auto", false));
+				}
+
+				auto n_var = std::make_shared<ir::ast::expression::variable>(
+					utils::position_range{ assignment_symbol.position, lexer_.current_lexeme().position },
+					variable_name);
+				current_block->variables.emplace(variable_name, n_var);
+					
+				return std::make_unique<ir::ast::statement::variable_declaration>(
+					utils::position_range{ assignment_symbol.position, lexer_.current_lexeme().position },
+					variable_name,
+					std::move(var_type),
+					parse_expression());
+			}
+			case lexer::lexeme_type::symbol_equals:
+			{
+				if (!existing_var)
+				{
+					std::stringstream error_message;
+					error_message << "cannot assign non-existent variable " << variable_name;
+
+					throw utils::compiler_exception{
+						lexer_.current_lexeme().position,
+						error_message.str()
+					};
+				}
+
+				return std::make_unique<ir::ast::statement::variable_assignment>(
+					utils::position_range{ assignment_symbol.position, lexer_.current_lexeme().position },
+					variable_name,
+					parse_expression());
+			}
+		}
+	}
+	
 	std::unique_ptr<ir::ast::statement::block> parser::parse_block_statement()
 	{
 		expect(lexer::lexeme_type::symbol_open_brace, true);
@@ -432,10 +513,23 @@ namespace seam::parser
 				body.emplace_back(parse_return_statement());
 				break;
 			}
+			case lexer::lexeme_type::identifier:
+			{
+				if (lexer_.peek_lexeme().type == lexer::lexeme_type::symbol_colon_equals
+					|| lexer_.peek_lexeme().type == lexer::lexeme_type::symbol_colon
+					|| lexer_.peek_lexeme().type == lexer::lexeme_type::symbol_equals)
+				{
+					body.emplace_back(parse_assignment_statement());
+					break;
+				}
+
+				[[fallthrough]];
+			}
 			default:
 			{
 				// TODO: use parse_primary_expression if we only want to allow call + index
 				auto expression = parse_expression();
+
 				body.push_back(std::make_unique<ir::ast::statement::expression_>(expression->range, std::move(expression)));
 				break;
 			}

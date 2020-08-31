@@ -17,7 +17,7 @@ namespace seam::parser
 		std::string_view filename_; // name of file currently being parsed.
 		lexer::lexer lexer_; // current lexer instance.
 
-		ir::ast::statement::statement* current_block = nullptr;
+		ir::ast::statement::block* current_block = nullptr;
 
 		/**
 		 * 
@@ -102,6 +102,8 @@ namespace seam::parser
 		std::unique_ptr<ir::ast::statement::if_stat> parse_if_statement();
 		
 		std::unique_ptr<ir::ast::statement::while_loop> parse_while_statement();
+
+		std::unique_ptr<ir::ast::statement::statement> parse_assignment_statement();
 		
 		/**
 		 * Parses a block statement.
