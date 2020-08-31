@@ -115,10 +115,12 @@ namespace seam::parser::passes
 		bool visit(expression::symbol_wrapper* node) override
 		{
 			const auto& it = function_map_.find(static_cast<expression::unresolved_symbol*>(node->value.get())->value);
-			if (it != function_map_.cend())
+			if (it == function_map_.cend())
 			{
-				node->value = std::make_unique<expression::resolved_symbol>(it->second);
+				throw utils::parser_exception{ node->range.start, "internal parser error: cannot resolve symbol" };
 			}
+			node->value = std::make_unique<expression::resolved_symbol>(it->second);
+			
 			return false;
 		}
 

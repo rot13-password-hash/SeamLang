@@ -210,6 +210,38 @@ namespace seam::code_generation
 
         bool visit(ir::ast::statement::while_loop* node) override
         {
+            auto start_block = builder.GetInsertBlock();
+
+            auto loop_start_block = llvm::BasicBlock::Create(builder.getContext(), "loopstart",
+                start_block->getParent());
+
+            if (!start_block->getTerminator())
+            {
+                builder.CreateBr(loop_start_block);
+            }
+
+            builder.SetInsertPoint(loop_start_block);
+            node->condition->visit(this);
+            auto condition_value = value;
+
+            auto loop_body_block = llvm::BasicBlock::Create(builder.getContext(), "loopbody",
+                start_block->getParent());
+            builder.SetInsertPoint(loop_body_block);
+            node->body->visit(this);
+
+            if (!loop_body_block->getTerminator())
+            {
+                builder.SetInsertPoint(loop_body_block);
+                builder.CreateBr(loop_start_block);
+            }
+
+            auto end_block = llvm::BasicBlock::Create(builder.getContext(), "end",
+                start_block->getParent());
+            builder.SetInsertPoint(loop_start_block);
+            builder.CreateCondBr(condition_value, loop_body_block, end_block);
+
+            builder.SetInsertPoint(end_block);
+
             return false;
         }
     	
@@ -259,8 +291,11 @@ namespace seam::code_generation
                 auto end_block = llvm::BasicBlock::Create(builder.getContext(), "end",
                     start_block->getParent());
 
-                builder.SetInsertPoint(start_block);
-                builder.CreateCondBr(condition_value, main_body_block, end_block);
+                if (!start_block->getTerminator())
+                {
+                    builder.SetInsertPoint(start_block);
+                    builder.CreateCondBr(condition_value, main_body_block, end_block);
+                }
 
                 if (!main_body_block->getTerminator())
                 {
@@ -271,6 +306,11 @@ namespace seam::code_generation
                 builder.SetInsertPoint(end_block);
             }
             return false;
+        }
+
+        bool visit(ir::ast::statement::expression_* node) override
+        {
+            return true;
         }
     	
         bool visit(ir::ast::statement::ret* node) override
@@ -510,7 +550,7 @@ namespace seam::code_generation
         llvm::raw_string_ostream error_stream{ error };
         if (llvm::verifyFunction(*llvm_func, &error_stream))
         {
-            throw std::runtime_error(error);
+            //throw std::runtime_error(error);
         }
     }
 
@@ -543,7 +583,7 @@ namespace seam::code_generation
         llvm::raw_string_ostream error_stream{ error };
         if (llvm::verifyModule(*llvm_module, &error_stream))
         {
-	       throw std::runtime_error(error);
+	       //throw std::runtime_error(error);
         }
 		
         return llvm_module;

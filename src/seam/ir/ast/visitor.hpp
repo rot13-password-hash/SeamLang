@@ -26,6 +26,7 @@ namespace seam::ir::ast
         VISITOR(statement::statement, statement::restricted);
         VISITOR(statement::statement, statement::restricted_block);
         VISITOR(statement::statement, statement::block);
+        VISITOR(statement::statement, statement::expression_);
         VISITOR(statement::statement, statement::ret);
         VISITOR(statement::statement, statement::while_loop);
         VISITOR(statement::statement, statement::if_stat);

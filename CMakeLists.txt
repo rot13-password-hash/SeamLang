@@ -1,6 +1,6 @@
 # Seam Language Compiler
 
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.15)
 set(CMAKE_CXX_STANDARD 17)
 
 project(Seam)
@@ -43,3 +43,6 @@ add_executable(lexer_test
 	src/seam/lexer/lexer.cpp "src/seam/parser/passes/function_dependency.cpp")
 
 target_link_libraries(lexer_test ${LLVM_LIBS})
+
+set_property(TARGET compiler PROPERTY
+             MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")

@@ -33,6 +33,14 @@ namespace seam::ir::ast::statement
 		}
 	}
 
+	void expression_::visit(visitor* vst)
+	{
+		if (vst->visit(this))
+		{
+			value->visit(vst);
+		}
+	}
+
 	void ret::visit(visitor* vst)
 	{
 		if (vst->visit(this))

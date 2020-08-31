@@ -436,7 +436,7 @@ namespace seam::parser
 			{
 				// TODO: use parse_primary_expression if we only want to allow call + index
 				auto expression = parse_expression();
-
+				body.push_back(std::make_unique<ir::ast::statement::expression_>(expression->range, std::move(expression)));
 				break;
 			}
 			}
