@@ -125,16 +125,17 @@ namespace seam::code_generation
 
     struct code_gen_visitor : ir::ast::visitor
     {
-	    explicit code_gen_visitor(llvm::IRBuilder<>& builder, code_generation& gen)
-	        : builder(builder), gen(gen) {}
+	    explicit code_gen_visitor(llvm::IRBuilder<>& builder, code_generation& gen) :
+            builder(builder), gen(gen)
+        {}
 
-        code_generation& gen;
         llvm::IRBuilder<>& builder;
-        llvm::Value* value;
+        code_generation& gen;
+
+        llvm::Value* value = nullptr;
 
         bool visit(ir::ast::expression::symbol_wrapper* node) override
         {
-            ;
             value = gen.get_or_declare_function(static_cast<ir::ast::expression::resolved_symbol*>(node->value.get())->signature.get());
             return false;
         }
@@ -214,6 +215,61 @@ namespace seam::code_generation
     	
         bool visit(ir::ast::statement::if_stat* node) override
         {
+            node->condition->visit(this);
+            auto condition_value = value;
+
+            auto start_block = builder.GetInsertBlock();
+            
+            auto main_body_block = llvm::BasicBlock::Create(builder.getContext(), "mainbody",
+                start_block->getParent());
+
+            builder.SetInsertPoint(main_body_block);
+            node->main_body->visit(this);
+
+            if (node->else_body)
+            {
+                auto else_body_block = llvm::BasicBlock::Create(builder.getContext(), "elsebody",
+                    start_block->getParent());
+
+                builder.SetInsertPoint(else_body_block);
+                node->main_body->visit(this);
+
+                auto end_block = llvm::BasicBlock::Create(builder.getContext(), "end",
+                    start_block->getParent());
+
+                builder.SetInsertPoint(start_block);
+                builder.CreateCondBr(condition_value, main_body_block, else_body_block);
+
+                if (!main_body_block->getTerminator())
+                {
+                    builder.SetInsertPoint(main_body_block);
+                    builder.CreateBr(end_block);
+                }
+
+                if (!else_body_block->getTerminator())
+                {
+                    builder.SetInsertPoint(else_body_block);
+                    builder.CreateBr(end_block);
+                }
+
+                builder.SetInsertPoint(end_block);
+            }
+            else
+            {
+                auto end_block = llvm::BasicBlock::Create(builder.getContext(), "end",
+                    start_block->getParent());
+
+                builder.SetInsertPoint(start_block);
+                builder.CreateCondBr(condition_value, main_body_block, end_block);
+
+                if (!main_body_block->getTerminator())
+                {
+                    builder.SetInsertPoint(main_body_block);
+                    builder.CreateBr(end_block);
+                }
+
+                builder.SetInsertPoint(end_block);
+            }
             return false;
         }
     	
@@ -487,7 +543,7 @@ namespace seam::code_generation
         llvm::raw_string_ostream error_stream{ error };
         if (llvm::verifyModule(*llvm_module, &error_stream))
         {
-	        throw std::runtime_error(error);
+	       throw std::runtime_error(error);
         }
 		
         return llvm_module;
