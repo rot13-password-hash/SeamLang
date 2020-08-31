@@ -7,6 +7,7 @@
 
 #include "node.hpp"
 #include "type.hpp"
+#include "../../lexer/lexeme.hpp"
 
 namespace seam::ir::ast
 {
@@ -24,6 +25,39 @@ namespace seam::ir::ast::expression
 		virtual ~expression() = default;
 	};
 
+	struct unary : expression
+	{
+		std::unique_ptr<expression> right;
+		lexer::lexeme_type operation;
+
+		void visit(visitor* vst) override;
+
+		explicit unary(utils::position_range range,
+			std::unique_ptr<expression> rhs,
+			lexer::lexeme_type operation) :
+			expression(range),
+		right(std::move(rhs)),
+		operation(operation) {}
+	};
+
+	struct binary : expression
+	{
+		std::unique_ptr<expression> left;
+		std::unique_ptr<expression> right;
+		lexer::lexeme_type operation;
+
+		void visit(visitor* vst) override;
+		
+		explicit binary(utils::position_range range,
+			std::unique_ptr<expression> lhs,
+			std::unique_ptr<expression> rhs,
+			lexer::lexeme_type operation) :
+			expression(range),
+		left(std::move(lhs)),
+		right(std::move(rhs)),
+		operation(operation) {}
+	};
+	
 	using expression_list = std::vector<std::unique_ptr<expression>>;
 
 	struct variable final : expression
@@ -80,7 +114,7 @@ namespace seam::ir::ast::expression
 		std::shared_ptr<number> value;
 
 		void visit(visitor* vst) override;
-		
+
 		number_wrapper(utils::position_range range, std::shared_ptr<number> value) :
 			literal(range), value(std::move(value))
 		{}
@@ -118,5 +152,39 @@ namespace seam::ir::ast::expression
 		{}
 
 		void visit(visitor* vst) override;
+	};
+
+	struct symbol
+	{
+		
+	};
+	
+	struct symbol_wrapper final : expression
+	{
+		std::unique_ptr<symbol> value;
+
+		void visit(visitor* vst) override;
+
+		symbol_wrapper(utils::position_range range, std::unique_ptr <symbol> value) :
+			expression(range), value(std::move(value))
+		{}
+	};
+
+	struct unresolved_symbol final : symbol
+	{
+		std::string value;
+
+		explicit unresolved_symbol(std::string value) :
+			value(std::move(value))
+		{}
+	};
+
+	struct resolved_symbol final : symbol
+	{
+		std::shared_ptr<function_signature> signature;
+
+		explicit resolved_symbol(std::shared_ptr<function_signature> sig) :
+			signature(std::move(sig))
+		{}
 	};
 }

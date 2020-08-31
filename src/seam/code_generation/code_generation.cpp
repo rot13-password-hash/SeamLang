@@ -122,12 +122,20 @@ namespace seam::code_generation
 
     struct code_gen_visitor : ir::ast::visitor
     {
-	    explicit code_gen_visitor(llvm::IRBuilder<>& builder)
-	        : builder(builder) {}
-    	
+	    explicit code_gen_visitor(llvm::IRBuilder<>& builder, code_generation& gen)
+	        : builder(builder), gen(gen) {}
+
+        code_generation& gen;
         llvm::IRBuilder<>& builder;
         llvm::Value* value;
 
+        bool visit(ir::ast::expression::symbol_wrapper* node) override
+        {
+            ;
+            value = gen.get_or_declare_function(static_cast<ir::ast::expression::resolved_symbol*>(node->value.get())->signature.get());
+            return false;
+        }
+    	
         bool visit(ir::ast::expression::call* node) override
         {
         	// TODO: Handle call expressions in code_gen.
@@ -137,10 +145,9 @@ namespace seam::code_generation
                 throw utils::compiler_exception{ node->range.start, "internal compiler error: expected function for call" };
             }
 
-            auto func = static_cast<llvm::Function*>(value);
+            const auto func = static_cast<llvm::Function*>(value);
 
             std::vector<llvm::Value*> arguments;
-
             for (const auto& arg : node->arguments)
             {
                 arg->visit(this);
@@ -154,6 +161,16 @@ namespace seam::code_generation
         bool visit(ir::ast::expression::bool_literal* node) override
         {
             value = llvm::ConstantInt::get(builder.getContext(), llvm::APInt(sizeof(std::uint8_t) * 8, static_cast<std::uint8_t>(node->value)));
+            return false;
+        }
+
+        bool visit(ir::ast::statement::while_loop* node) override
+        {
+            return false;
+        }
+    	
+        bool visit(ir::ast::statement::if_stat* node) override
+        {
             return false;
         }
     	
@@ -175,30 +192,90 @@ namespace seam::code_generation
         {
 			return true;
         }
+
+        bool visit(ir::ast::expression::binary* node) override
+        {
+            node->left->visit(this);
+            const auto lhs = value;
+
+            node->right->visit(this);
+            const auto rhs = value;
+
+            switch (node->operation)
+            {
+                case lexer::lexeme_type::symbol_add:
+                {
+                    return builder.CreateAdd(lhs, rhs, "addtmp");
+                }
+                case lexer::lexeme_type::symbol_minus:
+                {
+                    return builder.CreateSub(lhs, rhs, "subtmp");
+                }
+                case lexer::lexeme_type::symbol_multiply:
+                {
+                    return builder.CreateMul(lhs, rhs, "multmp");
+                }
+                case lexer::lexeme_type::symbol_divide:
+                {
+                    throw utils::compiler_exception{ node->range.start, "TODO: support division" };
+                }
+                case lexer::lexeme_type::symbol_eq:
+                {
+                    break;
+                }
+                case lexer::lexeme_type::symbol_neq:
+                {
+                    break;
+                }
+                case lexer::lexeme_type::symbol_lt:
+                {
+                    break;
+                }
+                case lexer::lexeme_type::symbol_lteq:
+                {
+                    break;
+                }
+                case lexer::lexeme_type::symbol_gt:
+                {
+                    break;
+                }
+                case lexer::lexeme_type::symbol_gteq:
+                {
+                    break;
+                }
+                default:
+                {
+                    throw utils::compiler_exception { node->range.start, "internal compiler error: invalid binary operation" };
+                }
+            }
+
+			return false;
+        }
     };
+	
+    llvm::Function* code_generation::get_or_declare_function(ir::ast::function_signature* signature)
+    {
+        auto func = llvm_module->getFunction(signature->mangled_name);
+    	if (!func)
+    	{
+            //llvm::FunctionType* func_type = get_llvm_function_type(def_stat);
+            //func = llvm::Function::Create(func_type, llvm::GlobalValue::InternalLinkage, def_stat->signature->mangled_name, *llvm_module);
+    	}
+        return func;
+    }
 
-	void code_generation::compile_function(ir::ast::statement::function_definition* func)
+    void code_generation::compile_function(ir::ast::statement::function_definition* func)
 	{
-		llvm::FunctionType* func_type;
-		if (func->signature->return_type)
-		{
-            func_type = get_llvm_function_type(func);
-		}
-		else
-		{
-			throw std::runtime_error("only void returns are supported");
-		}
-
-        llvm::Function* llvm_func = llvm::Function::Create(func_type, llvm::GlobalValue::InternalLinkage, 
-            func->signature->mangled_name, *llvm_module);
+        llvm::Function* llvm_func = llvm::Function::Create(get_llvm_function_type(func),
+            llvm::GlobalValue::InternalLinkage,  func->signature->mangled_name, *llvm_module);
         llvm::BasicBlock* basic_block = llvm::BasicBlock::Create(context_, "entry",
             llvm_func);
         llvm::IRBuilder<> builder(basic_block);
 
-        code_gen_visitor code_gen { builder };
+        code_gen_visitor code_gen { builder, *this };
         func->body->visit(&code_gen);
 
-        auto attribs = func->signature->attributes;
+        const auto& attribs = func->signature->attributes;
         if (attribs.find("constructor") != attribs.cend())
         {
             builder.CreateRetVoid(); //TODO: remove once types are added
@@ -224,11 +301,11 @@ namespace seam::code_generation
 			compile_function(func);
         }
 
-        auto* entry_function = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(context_), false),
+        auto entry_function = llvm::Function::Create(llvm::FunctionType::get(llvm::Type::getVoidTy(context_), false),
             llvm::GlobalValue::InternalLinkage,
             "entry", 
             *llvm_module);
-		auto* entry_basic_block = llvm::BasicBlock::Create(context_, "entry", entry_function);
+		auto entry_basic_block = llvm::BasicBlock::Create(context_, "entry", entry_function);
         llvm::IRBuilder<> entry_builder(entry_basic_block);
 
         for (const auto& constructor_func : constructor_functions)

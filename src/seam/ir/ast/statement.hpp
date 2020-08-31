@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <unordered_map>
 #include <unordered_set>
 #include <utility>
 #include <vector>
@@ -45,11 +46,16 @@ namespace seam::ir::ast::statement
 	struct block final : statement
 	{
 		statement_list body;
+		statement* parent;
+		std::unordered_map<std::string, std::shared_ptr<expression::variable>> variables;
 		
 		void visit(visitor* vst) override;
 
 		explicit block(utils::position_range range)
 			: statement(range) {}
+
+		explicit block(utils::position_range range, statement_list body)
+			: statement(range), body(std::move(body)) {}
 	};
 
 	struct ret final : statement
@@ -85,6 +91,25 @@ namespace seam::ir::ast::statement
 			statement(range), name(var_name), value(std::move(value)) {}
 	};
 
+	struct if_stat final : statement
+	{
+		std::unique_ptr<expression::expression> condition;
+		std::unique_ptr<block> main_body;
+		std::unique_ptr<block> else_body;
+		// elseif
+
+		void visit(visitor* vst) override;
+		
+		explicit if_stat(utils::position_range range,
+			std::unique_ptr<expression::expression> condition,
+			std::unique_ptr<block> main_body,
+			std::unique_ptr<block> else_body) :
+			statement(range),
+			condition(std::move(condition)),
+			main_body(std::move(main_body)),
+			else_body(std::move(else_body)) {}
+	};
+	
 	struct loop : statement
 	{
 		// numberial for loop, range for loop
@@ -103,21 +128,22 @@ namespace seam::ir::ast::statement
 		std::unique_ptr<expression::number_wrapper> final;
 		std::unique_ptr<expression::number_wrapper> step;
 
-		void (visitor* vst) override;
+		void visit(visitor* vst) override;
 
 		explicit numerical_for_loop(utils::position_range range, std::unique_ptr<expression::number_wrapper> initial,
-			std::unique_ptr<expression::number_wrapper> final, std::unique_ptr<expression::number_wrapper> step)
-				: initial(std::move(initial)), final(std::move(final)), step(std::move(step)) {}
+			std::unique_ptr<expression::number_wrapper> final, std::unique_ptr<expression::number_wrapper> step, std::unique_ptr<block> body)
+				: loop(range, std::move(body)), 
+					initial(std::move(initial)), final(std::move(final)), step(std::move(step)) {}
 	};
 	
 	struct while_loop final : loop
 	{
 		std::unique_ptr<expression::expression> condition;
 
-		void (visitor* vst) override;
+		void visit(visitor* vst) override;
 
 		explicit while_loop(utils::position_range range, std::unique_ptr<expression::expression> condition, std::unique_ptr<block> body) :
-			loop(range, std::move(body)) condition(std::move(condition)) {}
+			loop(range, std::move(body)), condition(std::move(condition)) {}
 	};
 
 	struct function_definition final : restricted

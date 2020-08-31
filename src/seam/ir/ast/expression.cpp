@@ -3,6 +3,24 @@
 
 namespace seam::ir::ast::expression
 {
+	void unary::visit(visitor* vst)
+	{
+		if (vst->visit(this))
+		{
+			right->visit(vst);
+		}
+	}
+
+	void binary::visit(visitor* vst)
+	{
+		if (vst->visit(this))
+		{
+			left->visit(vst);
+			right->visit(vst);
+		}
+	}
+
+	
 	void variable::visit(visitor* vst)
 	{
 		if (vst->visit(this))
@@ -42,4 +60,9 @@ namespace seam::ir::ast::expression
     {
 		vst->visit(this);
     }
+	
+	void symbol_wrapper::visit(visitor* vst)
+	{
+		vst->visit(this);
+	}
 }

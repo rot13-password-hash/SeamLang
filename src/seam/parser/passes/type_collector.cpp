@@ -88,7 +88,13 @@ namespace seam::parser::passes
 
             return false;
 		}
-
+    	
+        bool visit(statement::function_definition* node) override
+		{
+            function_map_.emplace(node->signature->name, node->signature);
+            return true;
+		}
+    	
 		bool visit(statement::class_type_definition* node) override
         {
             const auto class_type = std::make_shared<resolved_type>();

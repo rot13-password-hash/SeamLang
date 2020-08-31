@@ -11,6 +11,7 @@ namespace seam::parser::passes
 
 	struct resolver : visitor
 	{
+		const function_map& function_map_;
 		const type_map& type_map_;
 
 		bool visit(expression::number_wrapper* node) override
@@ -35,18 +36,28 @@ namespace seam::parser::passes
 			return false;
 		}
 
-		resolver(const type_map& type_map_) :
-			type_map_(type_map_)
+		bool visit(expression::symbol_wrapper* node) override
+		{
+			const auto& it = function_map_.find(static_cast<expression::unresolved_symbol*>(node->value.get())->value);
+			if (it != function_map_.cend())
+			{
+				node->value = std::make_unique<expression::resolved_symbol>(it->second);
+			}
+			return false;
+		}
+
+		resolver(const type_map& type_map_, const function_map& function_map_) :
+			type_map_(type_map_), function_map_(function_map_)
 		{}
 	};
 
 	void type_resolver::run(node* node)
 	{
-		resolver vst{ type_map_ };
+		resolver vst{ type_map_, function_map_ };
 		node->visit(&vst);
 	}
 
-	type_resolver::type_resolver(const type_map& type_map_) :
-		type_map_(type_map_)
+	type_resolver::type_resolver(const type_map& type_map_, const function_map& function_map_) :
+		type_map_(type_map_), function_map_(function_map_)
 	{}
 }

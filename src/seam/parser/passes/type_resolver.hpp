@@ -7,9 +7,10 @@ namespace seam::parser::passes
 	struct type_resolver : pass
 	{
 		const type_map& type_map_;
+		const function_map& function_map_;
 
 		void run(ir::ast::node* node) override;
 
-		explicit type_resolver(const type_map& type_map_);
+		explicit type_resolver(const type_map& type_map_, const function_map& function_map_);
 	};
 }

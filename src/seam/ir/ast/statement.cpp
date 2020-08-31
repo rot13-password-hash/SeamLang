@@ -56,6 +56,16 @@ namespace seam::ir::ast::statement
 		}
 	}
 
+	void if_stat::visit(visitor* vst)
+	{
+		if (vst->visit(this))
+		{
+			condition->visit(vst);
+			main_body->visit(vst);
+			else_body->visit(vst);
+		}
+	}
+	
 	void loop::visit(visitor* vst)
 	{
 		if (vst->visit(this))

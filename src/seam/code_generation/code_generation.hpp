@@ -27,8 +27,9 @@ namespace seam::code_generation
 
         llvm::Type* get_llvm_type(ir::ast::resolved_type* t);
         llvm::FunctionType* get_llvm_function_type(ir::ast::statement::function_definition* func);
-		void compile_function(ir::ast::statement::function_definition* func);
 
+        
+    	void compile_function(ir::ast::statement::function_definition* func);
     public:
         code_generation(types::module* mod) :
 			llvm_module(std::make_shared<llvm::Module>(mod->name, context_)),
@@ -38,5 +39,6 @@ namespace seam::code_generation
         {}
 
         std::shared_ptr<llvm::Module> generate();
+    	llvm::Function* get_or_declare_function(ir::ast::function_signature* signature);
     };
 }

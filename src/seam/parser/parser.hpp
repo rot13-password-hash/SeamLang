@@ -76,7 +76,7 @@ namespace seam::parser
 		 * @returns a unique pointer to an expression node when successful, otherwise throws an exception.
 		 */
 		std::unique_ptr<ir::ast::expression::expression> parse_prefix_expression();
-		
+	
 		/**
 		 * Parses any generic expression.
 		 *
@@ -86,9 +86,23 @@ namespace seam::parser
 		 * @returns a unique pointer to an expression node when successful, otherwise throws an exception.
 		 */
 		std::unique_ptr<ir::ast::expression::expression> parse_expression();
+		
+		std::pair<std::unique_ptr<ir::ast::expression::expression>, std::optional<lexer::lexeme_type>> parse_sub_expression(std::size_t limit = 0);
 
+		std::unique_ptr<ir::ast::expression::expression> parse_simple_expression();
+
+		/**
+		 * Parses primary expression
+		 * primary_expression = prefix_expression '.' name | prefix_expression call_args
+		 */
+		std::unique_ptr<ir::ast::expression::expression> parse_primary_expression();
+		
 		std::unique_ptr<ir::ast::statement::ret> parse_return_statement();
 
+		std::unique_ptr<ir::ast::statement::if_stat> parse_if_statement();
+		
+		std::unique_ptr<ir::ast::statement::while_loop> parse_while_statement();
+		
 		/**
 		 * Parses a block statement.
 		 *

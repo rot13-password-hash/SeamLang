@@ -11,7 +11,7 @@ namespace seam::parser::passes
         type_collector type_collector_;
         type_collector_.run(root);
 
-        type_resolver type_resolver_{ type_collector_.type_map_ };
+        type_resolver type_resolver_{ type_collector_.type_map_, type_collector_.function_map_ };
         type_resolver_.run(root);
     }
 }

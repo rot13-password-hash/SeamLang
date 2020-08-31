@@ -23,6 +23,9 @@ namespace seam::lexer
 		{ "false", lexeme_type::kw_false },
 		{ "while", lexeme_type::kw_while },
 		{ "for", lexeme_type::kw_for },
+		{ "if", lexeme_type::kw_if },
+		{ "elseif", lexeme_type::kw_elseif },
+		{ "else", lexeme_type::kw_else },
 	};
 
 	const lexeme_map_t symbol_map
@@ -33,6 +36,7 @@ namespace seam::lexer
 		{ "-=", lexeme_type::symbol_minus_assign },
 		{ "*", lexeme_type::symbol_multiply },
 		{ "*=", lexeme_type::symbol_multiply_assign },
+		{ "%", lexeme_type::symbol_mod },
 		{ "(", lexeme_type::symbol_open_parenthesis },
 		{ ")", lexeme_type::symbol_close_parenthesis },
 		{ "[", lexeme_type::symbol_open_bracket },
@@ -52,6 +56,8 @@ namespace seam::lexer
 		{ "<=", lexeme_type::symbol_lteq },
 		{ ">", lexeme_type::symbol_gt },
 		{ ">=", lexeme_type::symbol_gteq },
+		{ "&&", lexeme_type::symbol_and },
+		{ "||", lexeme_type::symbol_or },
 	};
 
 	const std::unordered_set<std::string> attributes = { "constructor", "export" };
@@ -100,7 +106,7 @@ namespace seam::lexer
 		}
 	}
 
-	void lexer::skip_comment()
+	void lexer::skip_comment(lexeme& ref)
 	{
 		consume_character();
 		const auto is_long_comment = peek_character() == '/';
@@ -132,7 +138,7 @@ namespace seam::lexer
 		}
 	}
 
-	void lexer::lex_string_literal()
+	void lexer::lex_string_literal(lexeme& ref)
 	{
 		consume_character();
 		const auto start_offset = read_offset_;
@@ -148,7 +154,7 @@ namespace seam::lexer
 
 			if (peek_character() == '"')
 			{
-				current_.value = source_.substr(start_offset, read_offset_ - start_offset);
+				ref.value = source_.substr(start_offset, read_offset_ - start_offset);
 				consume_character();
 				return;
 			}
@@ -157,7 +163,7 @@ namespace seam::lexer
 		}
 	}
 
-	void lexer::lex_number_literal()
+	void lexer::lex_number_literal(lexeme& ref)
 	{
 		const auto is_hex = peek_character() == '0' && peek_character(1) == 'x';
 		auto is_float = false;
@@ -198,11 +204,11 @@ namespace seam::lexer
 			}
 		}
 
-		current_.value = source_.substr(start_offset, read_offset_ - start_offset);
-		current_.type = lexeme_type::literal_number;
+		ref.value = source_.substr(start_offset, read_offset_ - start_offset);
+		ref.type = lexeme_type::literal_number;
 	}
 
-	void lexer::lex_keyword_or_identifier()
+	void lexer::lex_keyword_or_identifier(lexeme& ref)
 	{
 		auto can_be_keyword = is_keyword_char(peek_character());
 
@@ -220,8 +226,8 @@ namespace seam::lexer
 
 			if (!is_identifier_char(next_char))
 			{
-				current_.type = lexeme_type::identifier;
-				current_.value = source_.substr(start_offset, read_offset_ - start_offset);
+				ref.type = lexeme_type::identifier;
+				ref.value = source_.substr(start_offset, read_offset_ - start_offset);
 				break;
 			}
 
@@ -232,12 +238,12 @@ namespace seam::lexer
 		{
 			if (const auto keyword_type = keyword_map.find(source_.substr(start_offset, read_offset_ - start_offset)); keyword_type != keyword_map.cend())
 			{
-				current_.type = keyword_type->second;
+				ref.type = keyword_type->second;
 			}
 		}
 	}
 
-	void lexer::lex_attribute()
+	void lexer::lex_attribute(lexeme& ref)
 	{
 		consume_character();
 
@@ -259,7 +265,7 @@ namespace seam::lexer
 
 			if (!is_identifier_char(next_char))
 			{
-				current_.type = lexeme_type::attribute;
+				ref.type = lexeme_type::attribute;
 
 				const auto proposed_attribute = source_.substr(start_offset, read_offset_ - start_offset);
 				if (attributes.find(std::string{ proposed_attribute }) == attributes.cend())
@@ -269,7 +275,7 @@ namespace seam::lexer
 					throw utils::lexical_exception{ current_position(), error_message.str() };
 				}
 
-				current_.value = proposed_attribute;
+				ref.value = proposed_attribute;
 				break;
 			}
 
@@ -277,7 +283,7 @@ namespace seam::lexer
 		}
 	}
 
-	void lexer::lex_symbol()
+	void lexer::lex_symbol(lexeme& ref)
 	{
 		// TODO: REFACTOR THIS
 		const auto start_offset = read_offset_;
@@ -287,11 +293,11 @@ namespace seam::lexer
 		if (peek_character(1) != eof_character && (symbol = symbol_map.find(source_.substr(start_offset, 2))) != symbol_map.cend())
 		{
 			consume_character();
-			current_.type = symbol->second;
+			ref.type = symbol->second;
 		}
 		else if (symbol = symbol_map.find(source_.substr(start_offset, 1)); symbol != symbol_map.cend())
 		{
-			current_.type = symbol->second;
+			ref.type = symbol->second;
 		}
 		else
 		{
@@ -305,17 +311,19 @@ namespace seam::lexer
 	lexer::lexer(std::shared_ptr<types::module> current_module, const std::string_view& source)
 		: current_module(current_module), source_(source) {}
 
-	void lexer::next_lexeme()
+
+
+	void lexer::lex(lexeme& ref)
 	{
 		skip_whitespace();
 
-		current_.position = current_position();
+		ref.position = current_position();
 
 		switch (peek_character())
 		{
 			case eof_character: // End of file.
 			{
-				current_.type = lexeme_type::eof;
+				ref.type = lexeme_type::eof;
 				break;
 			}
 			case '/': // Comment or division operations.
@@ -325,7 +333,7 @@ namespace seam::lexer
 
 				if (next_character == '/') // Is a comment.
 				{
-					skip_comment();
+					skip_comment(ref);
 					next_lexeme();
 					break;
 				}
@@ -333,40 +341,63 @@ namespace seam::lexer
 				if (next_character == '=') // Divide-Assign operator.
 				{
 					consume_character();
-					current_.type = lexeme_type::symbol_divide_assign;
+					ref.type = lexeme_type::symbol_divide_assign;
 					break;
 				}
-				current_.type = lexeme_type::symbol_divide; // Otherwise - just divide symbol.
+				ref.type = lexeme_type::symbol_divide; // Otherwise - just divide symbol.
 				break;
 			}
 			case '"': // String literal.
 			{
-				current_.type = lexeme_type::literal_string;
-				lex_string_literal();
+				ref.type = lexeme_type::literal_string;
+				lex_string_literal(ref);
 				break;
 			}
 			case '@': // Attribute.
 			{
-				lex_attribute();
+				lex_attribute(ref);
 				break;
 			}			
 			default:
 			{
 				if (is_start_identifier_char(peek_character())) // Must be keyword or identifier.
 				{
-					lex_keyword_or_identifier();
+					lex_keyword_or_identifier(ref);
 					return;
 				}
-
+					
 				if (std::isdigit(peek_character())) // Number literal.
 				{
-					lex_number_literal();
+					lex_number_literal(ref);
 					return;
 				}
-
-				lex_symbol();
+					
+				lex_symbol(ref);
 				break;
 			}
+		}	
+	}
+
+	lexeme& lexer::peek_lexeme()
+	{
+		if (!peeked_lexeme_)
+		{
+			peeked_lexeme_ = lexeme{};
+			lex(*peeked_lexeme_);
+		}
+		return *peeked_lexeme_;
+	}
+
+	void lexer::next_lexeme()
+	{
+		if (peeked_lexeme_)
+		{
+			current_ = peeked_lexeme_;
+			peeked_lexeme_.reset();
+		}
+		else
+		{
+			lex(*current_);
 		}
 	}
 }

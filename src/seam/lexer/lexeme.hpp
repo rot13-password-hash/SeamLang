@@ -26,6 +26,7 @@ namespace seam::lexer
 		symbol_minus_assign,
 		symbol_multiply,
 		symbol_multiply_assign,
+		symbol_mod,
 		symbol_open_parenthesis,
 		symbol_close_parenthesis,
 		symbol_open_bracket,
@@ -47,6 +48,8 @@ namespace seam::lexer
 		symbol_lteq,
 		symbol_gt,
 		symbol_gteq,
+		symbol_and,
+		symbol_or,
 
 		// keywords
 		kw_fn,
@@ -61,7 +64,61 @@ namespace seam::lexer
 		kw_false,
 		kw_while,
 		kw_for,
+		kw_if,
+		kw_elseif,
+		kw_else,
 	};
+
+	static bool is_operator(lexeme_type type)
+	{
+		switch(type)
+		{
+			case lexeme_type::symbol_divide:
+			case lexeme_type::symbol_divide_assign:
+			case lexeme_type::symbol_add:
+			case lexeme_type::symbol_add_assign:
+			case lexeme_type::symbol_minus:
+			case lexeme_type::symbol_minus_assign:
+			case lexeme_type::symbol_multiply:
+			case lexeme_type::symbol_multiply_assign:
+			case lexeme_type::symbol_eq:
+			case lexeme_type::symbol_neq:
+			case lexeme_type::symbol_lt:
+			case lexeme_type::symbol_lteq:
+			case lexeme_type::symbol_gt:
+			case lexeme_type::symbol_gteq:
+			case lexeme_type::symbol_not:
+			case lexeme_type::symbol_mod:
+			{
+				return true;
+			}
+			default:
+			{
+				return false;
+			}
+		}
+	}
+
+	static bool is_unary_operator(lexeme_type type)
+	{
+		switch (type)
+		{
+			case lexeme_type::symbol_minus:
+			case lexeme_type::symbol_not:
+			{
+				return true;
+			}
+			default:
+			{
+				return false;
+			}
+		}
+	}
+
+	static bool is_binary_operator(lexeme_type type)
+	{
+		return is_operator(type) && !is_unary_operator(type);
+	}
 	
 	struct lexeme
 	{
