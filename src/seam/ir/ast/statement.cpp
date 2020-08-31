@@ -37,7 +37,10 @@ namespace seam::ir::ast::statement
 	{
 		if (vst->visit(this))
 		{
-			value->visit(vst);
+			if (value)
+			{
+				value->visit(vst);
+			}
 		}
 	}
 	void variable_declaration::visit(visitor* vst)
@@ -62,7 +65,10 @@ namespace seam::ir::ast::statement
 		{
 			condition->visit(vst);
 			main_body->visit(vst);
-			else_body->visit(vst);
+			if (else_body)
+			{
+				else_body->visit(vst);
+			}
 		}
 	}
 	
