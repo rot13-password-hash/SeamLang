@@ -36,8 +36,9 @@ namespace seam::ir::ast::expression
 			std::unique_ptr<expression> rhs,
 			lexer::lexeme_type operation) :
 			expression(range),
-		right(std::move(rhs)),
-		operation(operation) {}
+			right(std::move(rhs)),
+			operation(operation)
+		{}
 	};
 
 	struct binary : expression
@@ -53,9 +54,10 @@ namespace seam::ir::ast::expression
 			std::unique_ptr<expression> rhs,
 			lexer::lexeme_type operation) :
 			expression(range),
-		left(std::move(lhs)),
-		right(std::move(rhs)),
-		operation(operation) {}
+			left(std::move(lhs)),
+			right(std::move(rhs)),
+			operation(operation)
+		{}
 	};
 	
 	using expression_list = std::vector<std::unique_ptr<expression>>;
@@ -111,11 +113,11 @@ namespace seam::ir::ast::expression
 
 	struct number_wrapper final : literal
 	{
-		std::shared_ptr<number> value;
+		std::unique_ptr<number> value;
 
 		void visit(visitor* vst) override;
 
-		number_wrapper(utils::position_range range, std::shared_ptr<number> value) :
+		number_wrapper(utils::position_range range, std::unique_ptr<number> value) :
 			literal(range), value(std::move(value))
 		{}
 	};
@@ -123,23 +125,21 @@ namespace seam::ir::ast::expression
 	struct unresolved_number final : number
 	{
 		std::string value;
+
+		unresolved_number(std::string value) :
+			value(std::move(value))
+		{}
 	};
 
 	struct resolved_number final : number
 	{
 		bool is_unsigned;
 		std::variant<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, float, double> value;
-	};
 
-	struct number_literal : literal
-	{
-		std::string value;
-
-		explicit number_literal(utils::position_range range, std::string value) :
-			literal(range), value(std::move(value))
+		resolved_number(bool is_unsigned, std::variant<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, float, double> value) :
+			is_unsigned(is_unsigned),
+			value(std::move(value))
 		{}
-
-		void visit(visitor* vst) override;
 	};
 
 	struct call final : expression
@@ -147,8 +147,8 @@ namespace seam::ir::ast::expression
 		std::unique_ptr<expression> function;
 		expression_list arguments;
 
-		explicit call(const utils::position_range range, std::unique_ptr<expression> function, expression_list arguments)
-			: expression(range), function(std::move(function)), arguments(std::move(arguments))
+		explicit call(const utils::position_range range, std::unique_ptr<expression> function, expression_list arguments) :
+			expression(range), function(std::move(function)), arguments(std::move(arguments))
 		{}
 
 		void visit(visitor* vst) override;

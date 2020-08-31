@@ -248,7 +248,9 @@ namespace seam::parser
 		case lexer::lexeme_type::literal_number:
 		{
 			lexer_.next_lexeme();
-			expr = std::make_unique<ir::ast::expression::number_literal>(utils::position_range{ start_position, current_lexeme.position }, std::string{ current_lexeme.value });
+			// TODO: number_wrapper
+			expr = std::make_unique<ir::ast::expression::number_wrapper>(utils::position_range{ start_position, current_lexeme.position },
+				std::make_unique<ir::ast::expression::unresolved_number>(std::string{ current_lexeme.value }));
 			break;
 		}
 		case lexer::lexeme_type::literal_string:

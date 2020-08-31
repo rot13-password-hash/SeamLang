@@ -29,9 +29,12 @@ namespace seam::code_generation
                     {
                         return llvm::Type::getVoidTy(context_);
                     }
+                    case ir::ast::resolved_type::built_in_type::bool_:
+                    {
+                        return llvm::Type::getInt1Ty(context_);
+                    }
                     case ir::ast::resolved_type::built_in_type::u8:
                     case ir::ast::resolved_type::built_in_type::i8:
-                    case ir::ast::resolved_type::built_in_type::bool_:
                     {
                         return llvm::Type::getInt8Ty(context_);
                     }
@@ -160,7 +163,47 @@ namespace seam::code_generation
     	
         bool visit(ir::ast::expression::bool_literal* node) override
         {
-            value = llvm::ConstantInt::get(builder.getContext(), llvm::APInt(sizeof(std::uint8_t) * 8, static_cast<std::uint8_t>(node->value)));
+            value = llvm::ConstantInt::get(builder.getContext(), llvm::APInt(1, node->value));
+            return false;
+        }
+
+        bool visit(ir::ast::expression::number_wrapper* node) override
+        {
+            const auto resolved = static_cast<ir::ast::expression::resolved_number*>(node->value.get());
+            value = std::visit(
+                [this, node](auto&& value) -> llvm::Value*
+                {
+                    using value_t = std::decay_t<decltype(value)>;
+                    if constexpr (std::is_same_v<value_t, std::uint8_t>)
+                    {
+                        return llvm::ConstantInt::get(builder.getContext(), llvm::APInt(sizeof(std::uint8_t) * 8, value));
+                    }
+                    else if constexpr (std::is_same_v<value_t, std::uint16_t>)
+                    {
+                        return llvm::ConstantInt::get(builder.getContext(), llvm::APInt(sizeof(std::uint16_t) * 8, value));
+                    }
+                    else if constexpr (std::is_same_v<value_t, std::uint32_t>)
+                    {
+                        return llvm::ConstantInt::get(builder.getContext(), llvm::APInt(sizeof(std::uint32_t) * 8, value));
+                    }
+                    else if constexpr (std::is_same_v<value_t, std::uint64_t>)
+                    {
+                        return llvm::ConstantInt::get(builder.getContext(), llvm::APInt(sizeof(std::uint64_t) * 8, value));
+                    }
+                    else if constexpr (std::is_same_v<value_t, float>)
+                    {
+                        return llvm::ConstantFP::get(builder.getContext(), llvm::APFloat(value));
+                    }
+                    else if constexpr (std::is_same_v<value_t, double>)
+                    {
+                        return llvm::ConstantFP::get(builder.getContext(), llvm::APFloat(value));
+                    }
+                    else
+                    {
+                        throw utils::compiler_exception{ node->range.start,
+                            "internal compiler error: unknown number type" };
+                    }
+                }, resolved->value);
             return false;
         }
 
@@ -195,52 +238,177 @@ namespace seam::code_generation
 
         bool visit(ir::ast::expression::binary* node) override
         {
+            auto left_node = dynamic_cast<ir::ast::expression::number_wrapper*>(node->left.get());
+            auto right_node = dynamic_cast<ir::ast::expression::number_wrapper*>(node->right.get());
+            if (!left_node || !right_node)
+            {
+                throw utils::compiler_exception{
+                    node->range.start,
+                    "internal compiler error: binary operations for non-arithmetic types are not implemented" };
+            }
+
+            auto resolved_left = static_cast<ir::ast::expression::resolved_number*>(left_node->value.get());
+            auto resolved_right = static_cast<ir::ast::expression::resolved_number*>(right_node->value.get());
+
             node->left->visit(this);
-            const auto lhs = value;
+            const auto lhs_value = value;
 
             node->right->visit(this);
-            const auto rhs = value;
+            const auto rhs_value = value;
+
+            // TODO: correct?
+            bool unsigned_operation = resolved_left->is_unsigned && resolved_right->is_unsigned;
+
+            // If either left or right is floating point, use a floating point operation.
+            bool float_operation = std::visit(
+                [&float_operation](auto&& left_value, auto&& right_value) -> bool
+                {
+                    using left_value_t = std::decay_t<decltype(left_value)>;
+                    using right_value_t = std::decay_t<decltype(right_value)>;
+                    return (std::is_same_v<left_value_t, float> || std::is_same_v<left_value_t, double>)
+                        || (std::is_same_v<right_value_t, float> || std::is_same_v<right_value_t, double>);
+                }, resolved_left->value, resolved_right->value);
 
             switch (node->operation)
             {
                 case lexer::lexeme_type::symbol_add:
                 {
-                    return builder.CreateAdd(lhs, rhs, "addtmp");
+                    if (float_operation)
+                    {
+                        value = builder.CreateFAdd(lhs_value, rhs_value, "faddtmp");
+                    }
+                    else
+                    {
+                        value = builder.CreateAdd(lhs_value, rhs_value, "addtmp");
+                    }
+                    break;
                 }
                 case lexer::lexeme_type::symbol_minus:
                 {
-                    return builder.CreateSub(lhs, rhs, "subtmp");
+                    if (float_operation)
+                    {
+                        value = builder.CreateFSub(lhs_value, rhs_value, "fsubtmp");
+                    }
+                    else
+                    {
+                        value = builder.CreateSub(lhs_value, rhs_value, "subtmp");
+                    }
+                    break;
                 }
                 case lexer::lexeme_type::symbol_multiply:
                 {
-                    return builder.CreateMul(lhs, rhs, "multmp");
+                    if (float_operation)
+                    {
+                        value = builder.CreateFMul(lhs_value, rhs_value, "fmultmp");
+                    }
+                    else
+                    {
+                        value = builder.CreateMul(lhs_value, rhs_value, "multmp");
+                    }
+                    break;
                 }
                 case lexer::lexeme_type::symbol_divide:
                 {
-                    throw utils::compiler_exception{ node->range.start, "TODO: support division" };
+                    if (float_operation)
+                    {
+                        value = builder.CreateFDiv(lhs_value, rhs_value, "fdivtmp");
+                    }
+                    else if (unsigned_operation)
+                    {
+                        value = builder.CreateUDiv(lhs_value, rhs_value, "udivtmp");
+                    }
+                    else
+                    {
+                        value = builder.CreateSDiv(lhs_value, rhs_value, "sdivtmp");
+                    }
+                    break;
                 }
                 case lexer::lexeme_type::symbol_eq:
                 {
+                    if (float_operation)
+                    {
+                        value = builder.CreateFCmpOEQ(lhs_value, rhs_value, "feqtmp");
+                    }
+                    else
+                    {
+                        value = builder.CreateICmpEQ(lhs_value, rhs_value, "eqtmp");
+                    }
                     break;
                 }
                 case lexer::lexeme_type::symbol_neq:
                 {
+                    if (float_operation)
+                    {
+                        value = builder.CreateFCmpONE(lhs_value, rhs_value, "fnetmp");
+                    }
+                    else
+                    {
+                        value = builder.CreateICmpNE(lhs_value, rhs_value, "netmp");
+                    }
                     break;
                 }
                 case lexer::lexeme_type::symbol_lt:
                 {
+                    if (float_operation)
+                    {
+                        value = builder.CreateFCmpOLT(lhs_value, rhs_value, "folttmp");
+                    }
+                    else if (unsigned_operation)
+                    {
+                        value = builder.CreateICmpULT(lhs_value, rhs_value, "ulttmp");
+                    }
+                    else
+                    {
+                        value = builder.CreateICmpSLT(lhs_value, rhs_value, "slttmp");
+                    }
                     break;
                 }
                 case lexer::lexeme_type::symbol_lteq:
                 {
+                    if (float_operation)
+                    {
+                        value = builder.CreateFCmpOLE(lhs_value, rhs_value, "foletmp");
+                    }
+                    else if (unsigned_operation)
+                    {
+                        value = builder.CreateICmpSLE(lhs_value, rhs_value, "uletmp");
+                    }
+                    else
+                    {
+                        value = builder.CreateICmpSLE(lhs_value, rhs_value, "sletmp");
+                    }
                     break;
                 }
                 case lexer::lexeme_type::symbol_gt:
                 {
+                    if (float_operation)
+                    {
+                        value = builder.CreateFCmpOGT(lhs_value, rhs_value, "fogttmp");
+                    }
+                    else if (unsigned_operation)
+                    {
+                        value = builder.CreateICmpUGT(lhs_value, rhs_value, "ugttmp");
+                    }
+                    else
+                    {
+                        value = builder.CreateICmpSGT(lhs_value, rhs_value, "sgttmp");
+                    }
                     break;
                 }
                 case lexer::lexeme_type::symbol_gteq:
                 {
+                    if (float_operation)
+                    {
+                        value = builder.CreateFCmpOGE(lhs_value, rhs_value, "fogetmp");
+                    }
+                    else if (unsigned_operation)
+                    {
+                        value = builder.CreateICmpSGE(lhs_value, rhs_value, "ugetmp");
+                    }
+                    else
+                    {
+                        value = builder.CreateICmpSGE(lhs_value, rhs_value, "sgetmp");
+                    }
                     break;
                 }
                 default:
