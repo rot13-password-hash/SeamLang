@@ -13,7 +13,7 @@
 
 namespace seam::code_generation
 {
-    llvm::Type* code_generation::get_llvm_type(ir::ast::resolved_type* t)
+    llvm::Type* code_generation::get_llvm_type(ir::ast::type* t)
     {
         /*
         string,
@@ -21,48 +21,48 @@ namespace seam::code_generation
         f64*/
 
         return std::visit([this, t](auto&& arg) -> llvm::Type* {
-            if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, ir::ast::resolved_type::built_in_type>)
+            if constexpr (std::is_same_v<std::decay_t<decltype(arg)>, ir::ast::type::built_in_type>)
             {
                 switch (arg)
                 {
-                    case ir::ast::resolved_type::built_in_type::void_:
+                    case ir::ast::type::built_in_type::void_:
                     {
                         return llvm::Type::getVoidTy(context_);
                     }
-                    case ir::ast::resolved_type::built_in_type::bool_:
+                    case ir::ast::type::built_in_type::bool_:
                     {
                         return llvm::Type::getInt1Ty(context_);
                     }
-                    case ir::ast::resolved_type::built_in_type::u8:
-                    case ir::ast::resolved_type::built_in_type::i8:
+                    case ir::ast::type::built_in_type::u8:
+                    case ir::ast::type::built_in_type::i8:
                     {
                         return llvm::Type::getInt8Ty(context_);
                     }
-                    case ir::ast::resolved_type::built_in_type::u16:
-                    case ir::ast::resolved_type::built_in_type::i16:
+                    case ir::ast::type::built_in_type::u16:
+                    case ir::ast::type::built_in_type::i16:
                     {
                         return llvm::Type::getInt16Ty(context_);
                     }
-                    case ir::ast::resolved_type::built_in_type::u32:
-                    case ir::ast::resolved_type::built_in_type::i32:
+                    case ir::ast::type::built_in_type::u32:
+                    case ir::ast::type::built_in_type::i32:
                     {
                         return llvm::Type::getInt32Ty(context_);
                     }
-                    case ir::ast::resolved_type::built_in_type::u64:
-                    case ir::ast::resolved_type::built_in_type::i64:
+                    case ir::ast::type::built_in_type::u64:
+                    case ir::ast::type::built_in_type::i64:
                     {
                         return llvm::Type::getInt64Ty(context_);
                     }
-                    case ir::ast::resolved_type::built_in_type::string:
+                    case ir::ast::type::built_in_type::string:
                     {
                         std::array<llvm::Type*, 2> fields{ size_type, llvm::PointerType::get(llvm::Type::getInt8Ty(context_), 0) };
                         return llvm::StructType::get(context_, llvm::makeArrayRef(fields), false);
                     }
-                    case ir::ast::resolved_type::built_in_type::f32:
+                    case ir::ast::type::built_in_type::f32:
                     {
                         return llvm::Type::getFloatTy(context_);
                     }
-                    case ir::ast::resolved_type::built_in_type::f64:
+                    case ir::ast::type::built_in_type::f64:
                     {
                         return llvm::Type::getDoubleTy(context_);
                     }
@@ -79,29 +79,29 @@ namespace seam::code_generation
         }, t->value);
     }
 
-    llvm::FunctionType* code_generation::get_llvm_function_type(ir::ast::statement::function_definition* func)
+    llvm::FunctionType* code_generation::get_llvm_function_type(utils::position position, ir::ast::expression::function_signature* signature)
     {
-        const auto& name = func->signature->mangled_name;
+        const auto& name = signature->mangled_name;
         const auto& it = function_type_map.find(name);
         if (it != function_type_map.cend())
         {
 	        return it->second;
         }
-    	
+
 	    // set return type
-        const auto return_type = get_llvm_type(static_cast<ir::ast::resolved_type*>(func->signature->return_type->value.get()));
+        const auto return_type = get_llvm_type(static_cast<ir::ast::type*>(signature->return_type.get()));
         if (!llvm::FunctionType::isValidReturnType(return_type))
         {
-            throw utils::compiler_exception(func->range.start, "internal compiler error: invalid return type");
+            throw utils::compiler_exception(position, "internal compiler error: invalid return type"); // func->range doesn't exist
         }
 
         std::vector<llvm::Type*> param_types;
-    	for (const auto& param : func->signature->parameters)
+    	for (const auto& param : signature->parameters)
     	{
-            const auto param_type = get_llvm_type(static_cast<ir::ast::resolved_type*>(param.param_type->value.get()));
+            const auto param_type = get_llvm_type(static_cast<ir::ast::type*>(param->var->type_.get()));
     		if (!llvm::FunctionType::isValidArgumentType(param_type))
     		{
-    			throw utils::compiler_exception(func->range.start, "internal compiler error: invalid parameter type");
+    			throw utils::compiler_exception(position, "internal compiler error: invalid parameter type"); // functio nrange doesn't exist
     		}
             param_types.push_back(param_type);
     	}
@@ -115,6 +115,13 @@ namespace seam::code_generation
 	struct function_collector : ir::ast::visitor
 	{
 		std::vector<ir::ast::statement::function_definition*> collected_functions;
+        std::vector<ir::ast::statement::extern_function_definition*> collected_extern_functions;
+
+        bool visit(ir::ast::statement::extern_function_definition* node)
+        {
+			collected_extern_functions.push_back(node);
+            return false;
+        }
 
 		bool visit(ir::ast::statement::function_definition* node) override
 		{
@@ -131,12 +138,14 @@ namespace seam::code_generation
 
         llvm::IRBuilder<>& builder;
         code_generation& gen;
+        std::unordered_map<ir::ast::expression::variable*, llvm::Value*> variables;
 
         llvm::Value* value = nullptr;
 
         bool visit(ir::ast::expression::symbol_wrapper* node) override
         {
-            value = gen.get_or_declare_function(static_cast<ir::ast::expression::resolved_symbol*>(node->value.get())->signature.get());
+            value = gen.get_or_declare_function(node->range.start,
+                static_cast<ir::ast::expression::resolved_symbol*>(node->value.get())->signature.get());
             return false;
         }
     	
@@ -168,43 +177,86 @@ namespace seam::code_generation
             return false;
         }
 
-        bool visit(ir::ast::expression::number_wrapper* node) override
+        bool visit(ir::ast::expression::variable_ref* node) override
         {
-            const auto resolved = static_cast<ir::ast::expression::resolved_number*>(node->value.get());
+			const auto var = node->var.get();
+			const auto& it = variables.find(var);
+			if (it != variables.cend())
+			{
+				value = it->second;
+            }
+			else
+			{
+				value = builder.CreateAlloca(gen.get_llvm_type(var->type_.get()), nullptr); // TODO: allocate all variables in entry block
+			}
+            return false;
+        }
+
+        bool visit(ir::ast::expression::number_literal* node) override
+        {
             value = std::visit(
                 [this, node](auto&& value) -> llvm::Value*
                 {
                     using value_t = std::decay_t<decltype(value)>;
-                    if constexpr (std::is_same_v<value_t, std::uint8_t>)
+                    if constexpr (std::is_same_v<value_t, std::uint64_t>)
                     {
-                        return llvm::ConstantInt::get(builder.getContext(), llvm::APInt(sizeof(std::uint8_t) * 8, value));
-                    }
-                    else if constexpr (std::is_same_v<value_t, std::uint16_t>)
-                    {
-                        return llvm::ConstantInt::get(builder.getContext(), llvm::APInt(sizeof(std::uint16_t) * 8, value));
-                    }
-                    else if constexpr (std::is_same_v<value_t, std::uint32_t>)
-                    {
-                        return llvm::ConstantInt::get(builder.getContext(), llvm::APInt(sizeof(std::uint32_t) * 8, value));
-                    }
-                    else if constexpr (std::is_same_v<value_t, std::uint64_t>)
-                    {
-                        return llvm::ConstantInt::get(builder.getContext(), llvm::APInt(sizeof(std::uint64_t) * 8, value));
-                    }
-                    else if constexpr (std::is_same_v<value_t, float>)
-                    {
-                        return llvm::ConstantFP::get(builder.getContext(), llvm::APFloat(value));
+						std::size_t type_size;
+						switch (std::get<ir::ast::type::built_in_type>(node->eval_type->value))
+						{
+							case ir::ast::type::built_in_type::u8:
+							case ir::ast::type::built_in_type::i8:
+							{
+								type_size = 1;
+								break;
+							}
+							case ir::ast::type::built_in_type::u16:
+							case ir::ast::type::built_in_type::i16:
+							{
+								type_size = 2;
+								break;
+							}
+							case ir::ast::type::built_in_type::u32:
+							case ir::ast::type::built_in_type::i32:
+							{
+								type_size = 4;
+								break;
+							}
+							case ir::ast::type::built_in_type::u64:
+							case ir::ast::type::built_in_type::i64:
+							{
+								type_size = 8;
+								break;
+							}
+							default:
+							{
+								throw utils::compiler_exception{ node->range.start, "internal compiler error: unknown integer type" };
+							}
+						}
+                        return llvm::ConstantInt::get(builder.getContext(), llvm::APInt(type_size * 8, value));
                     }
                     else if constexpr (std::is_same_v<value_t, double>)
                     {
-                        return llvm::ConstantFP::get(builder.getContext(), llvm::APFloat(value));
+						switch (std::get<ir::ast::type::built_in_type>(node->eval_type->value))
+						{
+							case ir::ast::type::built_in_type::f32:
+							{
+								return llvm::ConstantFP::get(builder.getContext(), llvm::APFloat(static_cast<float>(value)));
+							}
+							case ir::ast::type::built_in_type::f64:
+							{
+								return llvm::ConstantFP::get(builder.getContext(), llvm::APFloat(value));
+							}
+							default:
+							{
+								throw utils::compiler_exception{ node->range.start, "internal compiler error: unknown floating point type" };
+							}
+						}
                     }
                     else
                     {
-                        throw utils::compiler_exception{ node->range.start,
-                            "internal compiler error: unknown number type" };
+                        throw utils::compiler_exception{ node->range.start, "internal compiler error: unknown number type" };
                     }
-                }, resolved->value);
+                }, node->value);
             return false;
         }
 
@@ -245,6 +297,23 @@ namespace seam::code_generation
             return false;
         }
     	
+		bool visit(ir::ast::statement::assignment* node) override
+		{
+			node->to->visit(this);
+			const auto to = value;
+			node->from->visit(this);
+			auto from = value;
+
+			if (llvm::isa<llvm::AllocaInst>(from))
+			{
+				from = builder.CreateLoad(from);
+			}
+
+            builder.CreateStore(from, to);
+
+			return false;
+		}
+
         bool visit(ir::ast::statement::if_stat* node) override
         {
             node->condition->visit(this);
@@ -318,6 +387,10 @@ namespace seam::code_generation
             if (node->value)
             {
                 node->value->visit(this); // generate return
+				if (llvm::isa<llvm::AllocaInst>(value))
+				{
+					value = builder.CreateLoad(value);
+				}
                 builder.CreateRet(value);
             }
             else
@@ -327,25 +400,13 @@ namespace seam::code_generation
             return false;
         }
 
-        bool visit(ir::ast::statement::block* node) override
+        bool visit(ir::ast::statement::normal_block* node) override
         {
 			return true;
         }
 
         bool visit(ir::ast::expression::binary* node) override
         {
-            auto left_node = dynamic_cast<ir::ast::expression::number_wrapper*>(node->left.get());
-            auto right_node = dynamic_cast<ir::ast::expression::number_wrapper*>(node->right.get());
-            if (!left_node || !right_node)
-            {
-                throw utils::compiler_exception{
-                    node->range.start,
-                    "internal compiler error: binary operations for non-arithmetic types are not implemented" };
-            }
-
-            auto resolved_left = static_cast<ir::ast::expression::resolved_number*>(left_node->value.get());
-            auto resolved_right = static_cast<ir::ast::expression::resolved_number*>(right_node->value.get());
-
             node->left->visit(this);
             const auto lhs_value = value;
 
@@ -353,17 +414,19 @@ namespace seam::code_generation
             const auto rhs_value = value;
 
             // TODO: correct?
-            bool unsigned_operation = resolved_left->is_unsigned && resolved_right->is_unsigned;
+            bool unsigned_operation = false;//resolved_left->is_unsigned && resolved_right->is_unsigned;
 
             // If either left or right is floating point, use a floating point operation.
-            bool float_operation = std::visit(
+           /* bool float_operation = std::visit(
                 [&float_operation](auto&& left_value, auto&& right_value) -> bool
                 {
                     using left_value_t = std::decay_t<decltype(left_value)>;
                     using right_value_t = std::decay_t<decltype(right_value)>;
                     return (std::is_same_v<left_value_t, float> || std::is_same_v<left_value_t, double>)
                         || (std::is_same_v<right_value_t, float> || std::is_same_v<right_value_t, double>);
-                }, resolved_left->value, resolved_right->value);
+                }, resolved_left->value, resolved_right->value);*/
+
+			const auto float_operation = false;
 
             switch (node->operation)
             {
@@ -517,21 +580,21 @@ namespace seam::code_generation
         }
     };
 	
-    llvm::Function* code_generation::get_or_declare_function(ir::ast::function_signature* signature)
+    llvm::Function* code_generation::get_or_declare_function(utils::position position, ir::ast::expression::function_signature* signature)
     {
-        auto func = llvm_module->getFunction(signature->mangled_name);
+        auto name = signature->is_extern ? signature->name : signature->mangled_name;
+        auto func = llvm_module->getFunction(name);
     	if (!func)
     	{
-            //llvm::FunctionType* func_type = get_llvm_function_type(def_stat);
-            //func = llvm::Function::Create(func_type, llvm::GlobalValue::InternalLinkage, def_stat->signature->mangled_name, *llvm_module);
+            llvm::FunctionType* func_type = get_llvm_function_type(position, signature);
+            func = llvm::Function::Create(func_type, signature->is_extern ? llvm::GlobalValue::ExternalLinkage : llvm::GlobalValue::InternalLinkage, name, *llvm_module);
     	}
         return func;
     }
 
     void code_generation::compile_function(ir::ast::statement::function_definition* func)
 	{
-        llvm::Function* llvm_func = llvm::Function::Create(get_llvm_function_type(func),
-            llvm::GlobalValue::InternalLinkage,  func->signature->mangled_name, *llvm_module);
+        llvm::Function* llvm_func = get_or_declare_function(func->range.start, func->signature.get());
         llvm::BasicBlock* basic_block = llvm::BasicBlock::Create(context_, "entry",
             llvm_func);
         llvm::IRBuilder<> builder(basic_block);
@@ -554,10 +617,21 @@ namespace seam::code_generation
         }
     }
 
+    void code_generation::compile_extern_function(ir::ast::statement::extern_function_definition* func)
+    {
+        get_or_declare_function(func->range.start, func->signature.get());
+    }
+
     std::shared_ptr<llvm::Module> code_generation::generate()
     {
 		function_collector collector;
 		mod_->body->visit(&collector);
+
+        // Iterate over collected extern functions
+        for (const auto func : collector.collected_extern_functions)
+        {
+            compile_extern_function(func);
+        }
 
         // Iterate over collected functions
         for (const auto func : collector.collected_functions)

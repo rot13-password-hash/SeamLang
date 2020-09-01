@@ -22,7 +22,7 @@ namespace seam::ir::ast::statement
 		}
 	}
 	
-	void block::visit(visitor* vst)
+	void normal_block::visit(visitor* vst)
 	{
 		if (vst->visit(this))
 		{
@@ -51,19 +51,13 @@ namespace seam::ir::ast::statement
 			}
 		}
 	}
-	void variable_declaration::visit(visitor* vst)
-	{
-		if (vst->visit(this))
-		{
-			value->visit(vst);
-		}
-	}
 
-	void variable_assignment::visit(visitor* vst)
+	void assignment::visit(visitor* vst)
 	{
 		if (vst->visit(this))
 		{
-			value->visit(vst);
+			from->visit(vst);
+			to->visit(vst);
 		}
 	}
 
@@ -104,6 +98,11 @@ namespace seam::ir::ast::statement
 		{
 			condition->visit(vst);
 		}
+	}
+
+	void extern_function_definition::visit(visitor* vst)
+	{
+		vst->visit(this);
 	}
 
 	void alias_type_definition::visit(visitor* vst)

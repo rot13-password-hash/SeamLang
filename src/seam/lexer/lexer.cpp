@@ -5,6 +5,7 @@
 #include <cctype>
 #include <unordered_map>
 #include <unordered_set>
+#include <iostream>
 
 namespace seam::lexer
 {
@@ -26,6 +27,7 @@ namespace seam::lexer
 		{ "if", lexeme_type::kw_if },
 		{ "elseif", lexeme_type::kw_elseif },
 		{ "else", lexeme_type::kw_else },
+		{ "extern", lexeme_type::kw_extern },
 	};
 
 	const lexeme_map_t symbol_map

@@ -5,44 +5,22 @@
 #include <variant>
 #include <vector>
 #include <unordered_set>
+#include <stdexcept>
 
 #include "node.hpp"
 
 namespace seam::ir::ast
 {
-	struct type
-	{
-		std::string name;
-		bool is_optional = false;
-		bool is_auto = false;
-
-		explicit type(std::string name, bool is_optional, bool is_auto) :
-			name(std::move(name)),
-			is_optional(is_optional),
-			is_auto(is_auto)
-		{}
-	};
-
-	struct unresolved_type final : type
-	{
-		unresolved_type(bool is_auto) :
-			type("", false, is_auto)
-		{}
-		
-		unresolved_type(std::string name, bool is_optional) :
-			type(name, is_optional, false)
-		{}
-	};
-
 	struct class_descriptor
 	{
 		
 	};
 
-	struct resolved_type final : type
+	struct type
 	{
 		enum class built_in_type
 		{
+			auto_,
 			void_,
 			bool_,
 			string,
@@ -60,63 +38,20 @@ namespace seam::ir::ast
 
 		std::variant<built_in_type, class_descriptor> value;
 
-		bool can_implicitly_cast(resolved_type* other)
+		bool is(built_in_type t)
 		{
-			return false;
+			if (const auto built_in = std::get_if<built_in_type>(&value))
+			{
+				return t == *built_in;
+			}
+			else
+			{
+				throw std::runtime_error("class types are not supported");
+			}
 		}
 
-		bool is_compatible(resolved_type* other)
-		{
-			return this == other || can_implicitly_cast(other);
-		}
-
-		explicit resolved_type() :
-			type({}, false, false) {}
-	};
-
-	struct type_wrapper final : node
-	{
-		std::shared_ptr<type> value;
-
-		void visit(visitor* vst) override;
-
-		type_wrapper(utils::position_range range, std::shared_ptr<type> value) :
-			node(range), value(std::move(value))
+		explicit type(built_in_type t) :
+			value(t)
 		{}
-	};
-
-	struct parameter
-	{
-		std::unique_ptr<type_wrapper> param_type;
-		std::string name;
-
-		explicit parameter(std::unique_ptr<type_wrapper> param_type, std::string name) :
-			param_type(std::move(param_type)), name(std::move(name)) {}
-	};
-
-	using parameter_list = std::vector<parameter>;
-	using attribute_list = std::unordered_set<std::string>;
-
-	struct function_signature : node
-	{
-		std::string name;
-		std::unique_ptr<type_wrapper> return_type;
-		std::vector<parameter> parameters;
-		std::unordered_set<std::string> attributes;
-
-		std::string mangled_name;
-
-		explicit function_signature(std::string module_name, std::string name, std::unique_ptr<ir::ast::type_wrapper> return_type, ir::ast::parameter_list parameters,
-			ir::ast::attribute_list attributes) :
-			node({0,0}),
-			name(std::move(name)),
-			return_type(std::move(return_type)),
-			parameters(std::move(parameters)),
-			attributes(std::move(attributes))
-		{
-			mangled_name = module_name + "@" + this->name;
-		}
-
-		void visit(visitor* vst) override;
 	};
 }

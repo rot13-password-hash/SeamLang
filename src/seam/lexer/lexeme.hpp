@@ -10,7 +10,7 @@ namespace seam::lexer
 	enum class lexeme_type
 	{
 		eof,
-		identifier,
+		identifier, // 1
 		attribute,
 		
 		// literals
@@ -27,7 +27,7 @@ namespace seam::lexer
 		symbol_multiply,
 		symbol_multiply_assign,
 		symbol_mod,
-		symbol_open_parenthesis,
+		symbol_open_parenthesis, //
 		symbol_close_parenthesis,
 		symbol_open_bracket,
 		symbol_close_bracket,
@@ -52,7 +52,7 @@ namespace seam::lexer
 		symbol_or,
 
 		// keywords
-		kw_fn,
+		kw_fn, // 35
 		kw_as,
 		kw_return,
 		kw_type,
@@ -67,6 +67,7 @@ namespace seam::lexer
 		kw_if,
 		kw_elseif,
 		kw_else,
+		kw_extern,
 	};
 
 	static bool is_operator(lexeme_type type)

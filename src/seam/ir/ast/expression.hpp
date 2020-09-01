@@ -18,6 +18,8 @@ namespace seam::ir::ast::expression
 {	
 	struct expression : node
 	{
+		std::shared_ptr<type> eval_type{};
+
 		explicit expression(const utils::position_range range)
 			: node(range)
 		{}
@@ -62,21 +64,31 @@ namespace seam::ir::ast::expression
 	
 	using expression_list = std::vector<std::unique_ptr<expression>>;
 
-	struct variable final : expression
+	struct variable
 	{
 		std::string name;
-		std::shared_ptr<type_wrapper> type_;
-		
+		std::shared_ptr<type> type_;
+
+		variable(std::string name, std::shared_ptr<type> type_) :
+			name(std::move(name)),
+			type_(std::move(type_))
+		{}
+	};
+
+	struct variable_ref final : expression
+	{
+		std::shared_ptr<variable> var;
+
 		void visit(visitor* vst) override;
 
-		variable(utils::position_range range, std::string name) :
+		variable_ref(utils::position_range range, std::shared_ptr<variable> var) :
 			expression(range),
-			name(std::move(name))
+			var(std::move(var))
 		{}
 	};
 
 	struct literal : expression
-	{		
+	{
 		void visit(visitor* vst) override = 0;
 
 		explicit literal(utils::position_range range) :
@@ -88,58 +100,35 @@ namespace seam::ir::ast::expression
 	{
 		bool value;
 
+		void visit(visitor* vst) override;
+
 		explicit bool_literal(utils::position_range range, bool value) :
 			literal(range), value(value)
 		{}
-
-		void visit(visitor* vst) override;
 	};
 
 	struct string_literal : literal
 	{
 		std::string value;
 
+		void visit(visitor* vst) override;
+
 		explicit string_literal(utils::position_range range, std::string value) :
 			literal(range), value(std::move(value))
 		{}
-
-		void visit(visitor* vst) override;
 	};
 
-	struct number
+	struct number_literal final : literal
 	{
-
-	};
-
-	struct number_wrapper final : literal
-	{
-		std::unique_ptr<number> value;
-
-		void visit(visitor* vst) override;
-
-		number_wrapper(utils::position_range range, std::unique_ptr<number> value) :
-			literal(range), value(std::move(value))
-		{}
-	};
-
-	struct unresolved_number final : number
-	{
-		std::string value;
-
-		unresolved_number(std::string value) :
-			value(std::move(value))
-		{}
-	};
-
-	struct resolved_number final : number
-	{
+		std::variant<std::uint64_t, double> value;
 		bool is_unsigned;
-		std::variant<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, float, double> value;
 
-		resolved_number(bool is_unsigned, std::variant<std::uint8_t, std::uint16_t, std::uint32_t, std::uint64_t, float, double> value) :
-			is_unsigned(is_unsigned),
-			value(std::move(value))
-		{}
+		void visit(visitor* vst) override;
+
+		void parse_float(const std::string& value);
+		void parse_integer(const std::string& value, bool is_unsigned);
+
+		explicit number_literal(utils::position_range range, const std::string& value);
 	};
 
 	struct call final : expression
@@ -177,6 +166,34 @@ namespace seam::ir::ast::expression
 		explicit unresolved_symbol(std::string value) :
 			value(std::move(value))
 		{}
+	};
+
+	using parameter = variable_ref;
+	using parameter_list = std::vector<std::unique_ptr<parameter>>;
+	using attribute_list = std::unordered_set<std::string>;
+
+	struct function_signature : node
+	{
+		std::string name;
+		std::shared_ptr<type> return_type;
+		std::vector<std::unique_ptr<variable_ref>> parameters;
+		std::unordered_set<std::string> attributes;
+		bool is_extern = false;
+
+		std::string mangled_name;
+
+		explicit function_signature(std::string module_name, std::string name, std::shared_ptr<type> return_type, parameter_list parameters,
+			attribute_list attributes) :
+			node({ 0,0 }),
+			name(std::move(name)),
+			return_type(std::move(return_type)),
+			parameters(std::move(parameters)),
+			attributes(std::move(attributes))
+		{
+			mangled_name = module_name + "@" + this->name;
+		}
+
+		void visit(visitor* vst) override;
 	};
 
 	struct resolved_symbol final : symbol

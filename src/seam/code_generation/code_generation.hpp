@@ -25,11 +25,13 @@ namespace seam::code_generation
     	
         llvm::Type* size_type;
 
-        llvm::Type* get_llvm_type(ir::ast::resolved_type* t);
-        llvm::FunctionType* get_llvm_function_type(ir::ast::statement::function_definition* func);
+        
+        llvm::FunctionType* get_llvm_function_type(utils::position position, ir::ast::expression::function_signature* signature);
 
         
     	void compile_function(ir::ast::statement::function_definition* func);
+        void compile_extern_function(ir::ast::statement::extern_function_definition* func);
+
     public:
         code_generation(types::module* mod) :
 			llvm_module(std::make_shared<llvm::Module>(mod->name, context_)),
@@ -38,7 +40,8 @@ namespace seam::code_generation
             size_type(llvm::Type::getIntNTy(context_, data_layout->getMaxPointerSizeInBits()))
         {}
 
+        llvm::Type* get_llvm_type(ir::ast::type* t);
         std::shared_ptr<llvm::Module> generate();
-    	llvm::Function* get_or_declare_function(ir::ast::function_signature* signature);
+    	llvm::Function* get_or_declare_function(utils::position position, ir::ast::expression::function_signature* signature);
     };
 }

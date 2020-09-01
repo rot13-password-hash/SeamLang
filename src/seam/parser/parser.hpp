@@ -17,7 +17,9 @@ namespace seam::parser
 		std::string_view filename_; // name of file currently being parsed.
 		lexer::lexer lexer_; // current lexer instance.
 
-		ir::ast::statement::block* current_block = nullptr;
+		ir::ast::statement::base_block* current_block = nullptr;
+
+		std::shared_ptr<ir::ast::type> auto_type;
 
 		/**
 		 * 
@@ -41,7 +43,7 @@ namespace seam::parser
 		 *
 		 * @returns a type.
 		 */
-		std::unique_ptr<ir::ast::type_wrapper> parse_type();
+		std::shared_ptr<ir::ast::type> parse_type();
 
 		/**
 		 * Parses a parameter.
@@ -51,7 +53,7 @@ namespace seam::parser
 		 *
 		 * @returns a parameter.
 		 */
-		ir::ast::parameter parse_parameter();
+		std::unique_ptr<ir::ast::expression::parameter> parse_parameter();
 
 		/**
 		 * Parses a parameter list.
@@ -61,7 +63,7 @@ namespace seam::parser
 		 *
 		 * @returns a vector of parameters.
 		 */
-		ir::ast::parameter_list parse_parameter_list();
+		ir::ast::expression::parameter_list parse_parameter_list();
 
 		ir::ast::expression::expression_list parse_expression_list();
 		
@@ -97,6 +99,8 @@ namespace seam::parser
 		 */
 		std::unique_ptr<ir::ast::expression::expression> parse_primary_expression();
 		
+		std::unique_ptr<ir::ast::statement::loop> parse_for_statement();
+
 		std::unique_ptr<ir::ast::statement::ret> parse_return_statement();
 
 		std::unique_ptr<ir::ast::statement::if_stat> parse_if_statement();
@@ -113,14 +117,14 @@ namespace seam::parser
 		 *
 		 * @returns a unique pointer to a block ast node when successful, otherwise throws an exception.
 		 */
-		std::unique_ptr<ir::ast::statement::block> parse_block_statement();
+		std::unique_ptr<ir::ast::statement::normal_block> parse_block_statement();
 
 		/**
 		 * Parses a function definition statement.
 		 *
 		 * @returns a unique pointer to a function definition ast node when successful, otherwise throws an exception.
 		 */
-		std::shared_ptr<ir::ast::function_signature> parse_function_signature();
+		std::shared_ptr<ir::ast::expression::function_signature> parse_function_signature();
 
 		/**
 		 * Parses a function definition statement.
@@ -129,6 +133,8 @@ namespace seam::parser
 		 */
 		std::unique_ptr<ir::ast::statement::function_definition> parse_function_definition_statement();
 		
+		std::unique_ptr<ir::ast::statement::extern_function_definition> parse_extern_function_definition_statement();
+
 		/**
 		 * Parses a type definition statement.
 		 *
