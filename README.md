@@ -104,7 +104,7 @@ There were a few other hitches along the way related to busy schedules with exis
 
 We're still commited to working on Seam though, so don't worry, we'll have something up soon! :P
 
-### What do have implemented?
+### What do we have implemented?
 
 As of posting, we do not yet compile an executable: which means there's nothing for you to tinker around with. However a lot of concepts are fleshed out and parsed, with a few actually generating code. The following features are implemented:
 
@@ -113,7 +113,7 @@ As of posting, we do not yet compile an executable: which means there's nothing 
 - Basic control flow (if-elseif-else and while/for loops)
 - Function calls
 
-### What do have yet implement?
+### What do we have yet implement?
 
 This one is a bit of a long one...so we're putting it in the **Future Aspirations** section.
 
